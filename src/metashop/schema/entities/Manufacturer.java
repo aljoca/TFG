@@ -1,8 +1,10 @@
 package metashop.schema.entities;
 
-import java.util.HashMap;
-import java.util.Map;
-
+/**
+ * - Pensando en la migración a una base de datos relacional,
+ *   no necesitaría definir una lista de productos ya que esa información la tendría incluída el mismo producto.
+ *   Esto evitaría duplicar información.
+ */
 public class Manufacturer {
 
     private Integer __manufacturerId;

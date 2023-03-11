@@ -1,4 +1,4 @@
-package metashop.schema.entities.discounts;
+package metashop.schema.entities;
 
 import java.util.HashMap;
 import java.util.Map;
