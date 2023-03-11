@@ -7,15 +7,15 @@ import java.util.Map;
 
 public class User {
     public Map<String, Class> geUserAttributes(){
-        Map<String, Class> productAttributes = new HashMap<>();
-        productAttributes.put("___userId", String.class);
-        productAttributes.put("email", String.class);
-        productAttributes.put("password", String.class);
-        productAttributes.put("country", String.class);
-        productAttributes.put("isPremium", Boolean.class);
-        productAttributes.put("shoppingAddress", String.class);
-        productAttributes.put("shopOpinion", String.class);
-        productAttributes.put("registerDate", Date.class);
-        return productAttributes;
+        Map<String, Class> usertAttributes = new HashMap<>();
+        usertAttributes.put("___userId", Integer.class);
+        usertAttributes.put("email", String.class);
+        usertAttributes.put("password", String.class);
+        usertAttributes.put("country", String.class);
+        usertAttributes.put("isPremium", Boolean.class);
+        usertAttributes.put("shoppingAddress", String.class);
+        usertAttributes.put("shopOpinion", String.class);
+        usertAttributes.put("registerDate", Date.class);
+        return usertAttributes;
     }
 }
