@@ -5,19 +5,19 @@ import java.util.Map;
 
 public class Manufacturer {
 
-    private Integer __manufacturer_id;
+    private Integer __manufacturerId;
     private String name;
 
-    private Map<String, Class> manufacturerAttributes;
-
-    Manufacturer(){
-        manufacturerAttributes = new HashMap();
+    public Manufacturer(Integer __manufacturerId, String name) {
+        this.__manufacturerId = __manufacturerId;
+        this.name = name;
     }
 
-    public Map<String, Class> getManufacturerAttributes(){
-        Map<String, Class> manufacturerAttributes = new HashMap<>();
-        manufacturerAttributes.put("__manufacturer_id", Integer.class);
-        manufacturerAttributes.put("name", String.class);
-        return manufacturerAttributes;
+    public Integer getManufacturerId() {
+        return __manufacturerId;
+    }
+
+    public String getName() {
+        return name;
     }
 }

@@ -4,12 +4,27 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class PaymentMethod {
-    public Map<String, Class> getPaymentMethodAttributes(){
-        Map<String, Class> paymentMethodAttributes = new HashMap<>();
-        paymentMethodAttributes.put("productId", String.class);
-        paymentMethodAttributes.put("imageUrl", String.class);
-        paymentMethodAttributes.put("description", String.class);
-        paymentMethodAttributes.put("price", String.class);
-        return paymentMethodAttributes;
+
+    private String __paymentMethodId;
+    private String name;
+    private String info;
+
+    public PaymentMethod(String __paymentMethodId, String name, String info) {
+        this.__paymentMethodId = __paymentMethodId;
+        this.name = name;
+        this.info = info;
     }
+
+    public String getPaymentMethodId() {
+        return __paymentMethodId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getInfo() {
+        return info;
+    }
+
 }

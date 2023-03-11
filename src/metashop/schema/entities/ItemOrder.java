@@ -4,12 +4,33 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ItemOrder {
-    public Map<String, Class> getItemOrderAttributes(){
-        Map<String, Class> itemOrderAttributes = new HashMap<>();
-        itemOrderAttributes.put("productId", String.class);
-        itemOrderAttributes.put("imageUrl", String.class);
-        itemOrderAttributes.put("description", String.class);
-        itemOrderAttributes.put("price", String.class);
-        return itemOrderAttributes;
+
+    private String __productId;
+    private String productName;
+    private Integer quantity;
+    private Double subPrice;
+
+    public ItemOrder(String __productId, String productName, Integer quantity, Double subPrice) {
+        this.__productId = __productId;
+        this.productName = productName;
+        this.quantity = quantity;
+        this.subPrice = subPrice;
     }
+
+    public String getItemOrderId() {
+        return __productId;
+    }
+
+    public String getProductName() {
+        return productName;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public Double getSubPrice() {
+        return subPrice;
+    }
+
 }
