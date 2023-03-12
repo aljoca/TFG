@@ -1,0 +1,4 @@
+__userId,name,email,password,shipping_addr,country,register_date,shop_opinion,ispremium
+1,Juan Pérez,juanperez@example.com,mypassword,Calle Falsa 123,Colombia,2022-01-01,Great shop!,true
+2,Maria Gomez,mariagomez@example.com,mypassword2,Calle Real 456,Argentina,2022-02-01,Good selection,false
+3,Pedro Martinez,pedromartinez@example.com,mypassword3,Avenida Principal 789,Mexico,2022-03-01,Could improve,false

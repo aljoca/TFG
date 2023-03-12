@@ -1,4 +1,4 @@
-package metashop.schema;
+package metashop.uschema;
 
 /**
  * Para facilitar el parseo de datos, se van a utilizar reglas de nomenclatura

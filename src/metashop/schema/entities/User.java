@@ -9,6 +9,7 @@ import java.util.Map;
 public class User {
 
     private String __userId;
+    private String name;
     private String email;
     private String password;
     private String country;
@@ -21,8 +22,9 @@ public class User {
     private ArrayList<User> recommendedUsers;
     private ArrayList<Discount> availableDiscounts;
 
-    public User(String __userId, String email, String password, String country, Boolean isPremium, String shoppingAddress, String shopOpinion, Date registerDate) {
+    public User(String __userId, String name, String email, String password, String country, Boolean isPremium, String shoppingAddress, String shopOpinion, Date registerDate) {
         this.__userId = __userId;
+        this.name = name;
         this.email = email;
         this.password = password;
         this.country = country;
@@ -38,6 +40,10 @@ public class User {
 
     public String getUserId() {
         return __userId;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public String getEmail() {

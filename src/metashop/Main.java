@@ -1,4 +1,6 @@
-import metashop.schema.MetaShopSchema;
+package metashop;
+
+import metashop.MetaShopSchema;
 import metashop.schema.entities.*;
 import metashop.schema.entities.Discount;
 import java.util.*;

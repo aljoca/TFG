@@ -3,13 +3,13 @@ package metashop.schema.entities;
 public class OrderItem {
 
     private String __orderItemId;
-    private String orderItemName;
+    private String name;
     private Integer quantity;
     private Double subPrice;
 
-    public OrderItem(String __orderItemId, String orderItemName, Integer quantity, Double subPrice) {
+    public OrderItem(String __orderItemId, String name, Integer quantity, Double subPrice) {
         this.__orderItemId = __orderItemId;
-        this.orderItemName = orderItemName;
+        this.name = name;
         this.quantity = quantity;
         this.subPrice = subPrice;
     }
@@ -18,8 +18,8 @@ public class OrderItem {
         return __orderItemId;
     }
 
-    public String getOrderItemName() {
-        return orderItemName;
+    public String getName() {
+        return name;
     }
 
     public Integer getQuantity() {
