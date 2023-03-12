@@ -1,4 +1,4 @@
-package metashop.schema.entities;
+package metashop.schema.inputdatamodel.entities;
 
 /**
  * - Pensando en la migración a una base de datos relacional,

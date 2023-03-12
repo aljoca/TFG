@@ -1,7 +1,4 @@
-package metashop.schema.entities;
-
-import java.util.HashMap;
-import java.util.Map;
+package metashop.schema.inputdatamodel.entities;
 
 public class ProductCategory {
 
