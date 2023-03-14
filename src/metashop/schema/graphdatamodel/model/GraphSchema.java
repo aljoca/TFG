@@ -6,7 +6,6 @@ import org.neo4j.driver.types.Node;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 
 public class GraphSchema{
 
@@ -40,30 +39,45 @@ public class GraphSchema{
         return entityTypes;
     }
 
+    /**
+     * Método para la generación de relaciones del grafo.
+     * @see RelationshipType
+     * @param relationships Conjunto de relaciones
+     * @return ArrayList de RelationshipType
+     */
     private ArrayList<RelationshipType> addRelationships(ArrayList<Record> relationships){
         ArrayList<RelationshipType> relationshipTypes = new ArrayList<>();
         relationships.forEach((Record relationship) -> {
-            ArrayList<EntityType> originAndDestination = retrieveOriginAndDestination(relationship);
-            RelationshipType relationshipType = new RelationshipType(originAndDestination.get(ORIGIN_ENTITY_TYPE_INDEX), originAndDestination.get(DESTINATION_ENTITY_TYPE_INDEX), relationship);
-            if (!relationshipTypes.contains(relationshipType))
+            RelationshipType relationshipType = new RelationshipType(relationship);
+            if (!relationshipTypes.contains(relationshipType)) {
+                // Obtengo los nombres de los nodos origen y destino para buscarlos en la colección de EntityType
+                String origin = String.join("", (Collections.singleton(String.join("", ((((Node) relationship.values().get(ORIGIN_ENTITY_TYPE_INDEX).asObject()).labels()))))));
+                String destination = String.join("", (Collections.singleton(String.join("", ((((Node) relationship.values().get(DESTINATION_ENTITY_TYPE_INDEX).asObject()).labels()))))));
+                ArrayList<EntityType> originAndDestination = getOriginAndDestination(origin, destination);
+                // Seteo estos dos atributos aquí en vez de al crear la relación, ya que así me ahorro estas búsquedas si la relación ya existe.
+                relationshipType.setOrigin(originAndDestination.get(ORIGIN_ENTITY_TYPE_INDEX));
+                relationshipType.setDestination(originAndDestination.get(DESTINATION_ENTITY_TYPE_INDEX));
                 relationshipTypes.add(relationshipType);
+            }
         });
         return relationshipTypes;
     }
 
-    private ArrayList<EntityType> retrieveOriginAndDestination(Record record){
-        EntityType origin = entities.get(concatenateLabels(Collections.singleton(concatenateLabels((((Node) record.values().get(ORIGIN_ENTITY_TYPE_INDEX).asObject()).labels())))));
-        EntityType destination = entities.get(concatenateLabels(Collections.singleton(concatenateLabels((((Node) record.values().get(DESTINATION_ENTITY_TYPE_INDEX).asObject()).labels())))));
+    /**
+     * Método para obtener los EntityType origen y destino de la relación
+     * @see EntityType
+     * @param origin Nombre del EntityType origen
+     * @param destination Nombre del EntityType destino
+     * @return ArrayList de EntityType
+     */
+    private ArrayList<EntityType> getOriginAndDestination(String origin, String destination){
+        EntityType originEntity = entities.get(origin);
+        EntityType destinationEntity = entities.get(destination);
         ArrayList<EntityType> originAndDestination = new ArrayList<>();
-        originAndDestination.add(origin);
-        originAndDestination.add(destination);
+        originAndDestination.add(originEntity);
+        originAndDestination.add(destinationEntity);
         return originAndDestination;
     }
-
-    private String concatenateLabels(Iterable<String> labels){
-        return String.join("", labels);
-    }
-
 
     @Override
     public String toString() {

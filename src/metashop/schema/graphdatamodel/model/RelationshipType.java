@@ -11,16 +11,14 @@ import java.util.Objects;
 public class RelationshipType {
 
     private final Label label;
-    private final EntityType origin;
-    private final EntityType destination;
+    private EntityType origin;
+    private EntityType destination;
     private final ArrayList<StructuralVariation> structuralVariations;
     private final static int RELATIONSHIP_ENTITY_TYPE_INDEX = 2;
 
 
-    public RelationshipType(EntityType origin, EntityType destination, Record record){
-         this.origin = origin;
-         this.destination = destination;
-         this.label = generateRelationshipLabels(record);
+    public RelationshipType(Record relationship){
+         this.label = generateRelationshipLabels(relationship);
          this.structuralVariations = new ArrayList<>();
      }
 
@@ -33,6 +31,14 @@ public class RelationshipType {
     public static Label generateRelationshipLabels(Record relationship){
        Value relationshipValue = relationship.values().get(RELATIONSHIP_ENTITY_TYPE_INDEX);
        return new Label(((Relationship)(relationshipValue.asObject())).type());
+    }
+
+    public void setOrigin(EntityType origin) {
+        this.origin = origin;
+    }
+
+    public void setDestination(EntityType destination) {
+        this.destination = destination;
     }
 
     @Override
