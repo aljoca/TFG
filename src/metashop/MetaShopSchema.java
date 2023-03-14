@@ -14,41 +14,41 @@ public abstract class MetaShopSchema implements AutoCloseable{
 
 
     /**
-     * Método para la obtención de todas las etiquetas existentes en la BBDD
+     * Método para la obtención de todos los nodos existentes en la BBDD
      * @return ArrayList de nodos
      */
     private static ArrayList<Record> getNodes() {
         try (Session session = driver.session()) {
-            ArrayList<Record> nodes = session.executeWrite(tx -> {
+            return session.executeWrite(tx -> {
                 Query query = new Query("MATCH (n) RETURN n");
                 Result result = tx.run(query);
                 return new ArrayList<>(result.list());
             });
-            return nodes;
         }
     }
 
     /**
      * Método para la obtención de todas las relaciones existentes en la BBDD
+     * Esta consulta tiene la particulareidad de que cada elemento contiene el nodo origen, el nodo destino y la relación.
+     * Haciendo solo la query de las relaciones sería más costoso, ya que solo vienen las referencias de los nodos relacionados.
      * @return ArrayList de relaciones
      */
     private static ArrayList<Record> getRelationships(){
         try (Session session = driver.session()) {
-            ArrayList<Record> relationships = session.executeWrite(tx -> {
-                Query query = new Query("MATCH (n)-[r]->() RETURN r");
+            return session.executeWrite(tx -> {
+                Query query = new Query("MATCH (n)-[r]->(m) RETURN n,m,r");
                 Result result = tx.run(query);
                 return new ArrayList<>(result.list());
             });
-            return relationships;
         }
     }
 
     @Override
-    public void close() throws Exception {
+    public void close(){
         driver.close();
     }
 
-    public static void main(String... args) throws Exception {
+    public static void main(String... args) {
         driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
         GraphSchema graphSchema = new GraphSchema("MetaShop", getNodes(), getRelationships());
         System.out.println(graphSchema);

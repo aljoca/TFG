@@ -10,24 +10,29 @@ import java.util.Objects;
 
 public class RelationshipType {
 
-    private Label label;
-    private EntityType origin;
-    private EntityType destination;
-    private ArrayList<StructuralVariation> structuralVariations;
+    private final Label label;
+    private final EntityType origin;
+    private final EntityType destination;
+    private final ArrayList<StructuralVariation> structuralVariations;
+    private final static int RELATIONSHIP_ENTITY_TYPE_INDEX = 2;
 
-     public RelationshipType(Record record){
+
+    public RelationshipType(EntityType origin, EntityType destination, Record record){
+         this.origin = origin;
+         this.destination = destination;
          this.label = generateRelationshipLabels(record);
          this.structuralVariations = new ArrayList<>();
      }
 
-    public static Label generateRelationshipLabels(Record record){
-       Value relationship = record.values().get(0);
-       return new Label(((Relationship)(relationship.asObject())).type());
-
-    }
-
-    public Label getLabel() {
-        return label;
+    /**
+     * Método para extraer la etiqueta de la relación
+     * @see Label
+     * @param relationship Relación para la que se quiere extraer la etiqueta. En este caso, asumimos que solo puede tener una etiqueta.
+     * @return Etiqueta de la relación
+     */
+    public static Label generateRelationshipLabels(Record relationship){
+       Value relationshipValue = relationship.values().get(RELATIONSHIP_ENTITY_TYPE_INDEX);
+       return new Label(((Relationship)(relationshipValue.asObject())).type());
     }
 
     @Override

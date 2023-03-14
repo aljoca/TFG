@@ -8,16 +8,19 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+
 public class EntityType {
 
-    private ArrayList<Label> labels;
-    private ArrayList<StructuralVariation> structuralVariations;
+    private final ArrayList<Label> labels;
+    private final ArrayList<StructuralVariation> structuralVariations;
     private final String name;
 
-    public EntityType(Record record) {
+
+    public EntityType(Record node) {
         this.structuralVariations = new ArrayList<>();
-        this.labels = generateEntityLabels(record);
-        //this.structuralVariations = generateStructuralVariations(record);
+        this.labels = generateEntityLabels(node);
+//        this.structuralVariations = generateStructuralVariations(record);
+        // Para setear el nombre, concateno el nombre de todas las etiquetas
         this.name = labels.stream().map(Label::getName).collect(Collectors.joining());
     }
 
@@ -27,14 +30,21 @@ public class EntityType {
         return structuralVariations;
     }
 
-    public static ArrayList<Label> generateEntityLabels(Record record){
+    /**
+     * Método para la generación de las etiquetas de un nodo.
+     * @see Label
+     * @param node Nodo del que se quiere extraer las etiquetas.
+     * @return ArrayList de Label
+     */
+    public static ArrayList<Label> generateEntityLabels(Record node){
         ArrayList<Label> labels = new ArrayList<>();
-        for (Value node: record.values()) {
-            for (String label: ((Node)(node.asObject())).labels()) {
-                labels.add(new Label(label));
-            }
-        }
+        // No me queda más remedio que obtener las etiquetas así por la estructura de un nodo en Neo4J
+        (node.values().get(0)).asNode().labels().forEach(label -> labels.add(new Label(label)));
         return labels;
+    }
+
+    public String getName() {
+        return name;
     }
 
     @Override
@@ -42,7 +52,8 @@ public class EntityType {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         EntityType that = (EntityType) o;
-        return Objects.equals(labels, that.labels) && Objects.equals(name, that.name); // && Objects.equals(structuralVariations, that.structuralVariations);
+        // Para comprobar si dos entidades son iguales, me basta con comparar el nombre, ya que está compuesto a partir de las etiquetas.
+        return Objects.equals(name, that.name);
     }
 
     @Override
@@ -52,10 +63,10 @@ public class EntityType {
 
     @Override
     public String toString() {
-        return "\nEntityType{" +
+        return "EntityType{" +
                 "labels=" + labels +
                 ", name='" + name + '\'' +
                 ", structuralVariations=" + structuralVariations +
-                "}";
+                "}\n";
     }
 }
