@@ -82,11 +82,11 @@ public class GraphSchema{
 
     @Override
     public String toString() {
-        return "\nGraphSchema{" +
-                "name='" + name + '\'' +
-                ",\n\n entities=" + entities.values() +
-                ",\n\n relationships=" + relationships +
-                "}\n";
+        return "GraphSchema{" +
+                "name='" + name +
+                ",entities=" + entities.values() +
+                ",relationships=" + relationships +
+                "}";
     }
 
 }

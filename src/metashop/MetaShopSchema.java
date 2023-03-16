@@ -45,7 +45,7 @@ public abstract class MetaShopSchema implements AutoCloseable{
                              WHEN valor IS NULL THEN 'null'
                              WHEN (valor + '') =~ '^-?[0-9]+$' THEN 'integer'
                              WHEN (valor + '') =~ '^-?[0-9]+\\.[0-9]+$' THEN 'float'
-                                  //WHEN split(valor, ' ')[0] IN ['True', 'False'] THEN 'boolean'
+                             WHEN toBoolean(valor) IS NOT NULL THEN 'boolean'
                              ELSE 'string'
                              END AS tipo_dato
                         RETURN tipo, collect(DISTINCT [propiedad, tipo_dato]) AS propiedades_tipo_dato              

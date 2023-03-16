@@ -23,7 +23,7 @@ public class Property {
     @Override
     public String toString() {
         return "Property{" +
-                "name='" + name + '\'' +
+                "name='" + name +
                 ", type=" + type +
                 '}';
     }

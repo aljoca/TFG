@@ -70,8 +70,8 @@ public class EntityType {
     public String toString() {
         return "EntityType{" +
                 "labels=" + labels +
-                ", name='" + name + '\'' +
+                ", name='" + name +
                 ", structuralVariations=" + structuralVariations +
-                "}\n";
+                "}";
     }
 }

@@ -58,11 +58,11 @@ public class RelationshipType {
 
     @Override
     public String toString() {
-        return "\nRelationshipType{" +
+        return "RelationshipType{" +
                 "label=" + label +
-                ", origin=" + origin +
-                ", destination=" + destination +
-                ", structuralVariations=" + structuralVariations +
+                ",origin=" + origin +
+                ",destination=" + destination +
+                ",structuralVariations=" + structuralVariations +
                 "}";
     }
 }
