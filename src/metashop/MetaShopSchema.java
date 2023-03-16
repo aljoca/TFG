@@ -5,12 +5,16 @@ import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
 public abstract class MetaShopSchema implements AutoCloseable{
     private static Driver driver;
     private final static String uri = "bolt://localhost:7687";
     private final static String user = "neo4j";
     private final static String password = "12345678";
+    public final static List<String> types = List.of("float", "integer", "boolean", "string");
 
 
     /**
@@ -20,9 +24,39 @@ public abstract class MetaShopSchema implements AutoCloseable{
     private static ArrayList<Record> getNodes() {
         try (Session session = driver.session()) {
             return session.executeWrite(tx -> {
-                Query query = new Query("MATCH (n) RETURN n");
-                Result result = tx.run(query);
-                return new ArrayList<>(result.list());
+                /*
+                    Explicación de la siguiente query en Cypher:
+                        Obtengo los nodos con sus labels y keys.
+                        Agrupo las labels y elimino los duplicados que aparecen al unir todas las propiedades.
+                        Devuelvo una tabla tipo-propiedades.
+
+                        UNION
+
+                        Obtengo los nodos que no tienen propiedades
+                        Devuelvo una tabla tipo-propiedades
+                */
+                Query queryDistinctNodes = new Query("""
+                        MATCH (n)
+                        WITH labels(n) as tipo, keys(n) as propiedades, n
+                        UNWIND propiedades AS propiedad
+                        WITH tipo, propiedad, n[propiedad] AS valor
+                        WITH tipo, propiedad, valor,
+                        CASE
+                             WHEN valor IS NULL THEN 'null'
+                             WHEN (valor + '') =~ '^-?[0-9]+$' THEN 'integer'
+                             WHEN (valor + '') =~ '^-?[0-9]+\\.[0-9]+$' THEN 'float'
+                                  //WHEN split(valor, ' ')[0] IN ['True', 'False'] THEN 'boolean'
+                             ELSE 'string'
+                             END AS tipo_dato
+                        RETURN tipo, collect(DISTINCT [propiedad, tipo_dato]) AS propiedades_tipo_dato              
+                        UNION
+                        MATCH (n)
+                        WHERE size(keys(n)) = 0
+                        WITH labels(n) as tipo, [] as propiedades_tipo_dato
+                        return tipo, propiedades_tipo_dato
+                        """);
+                Result resultDistinctNodes = tx.run(queryDistinctNodes);
+                return new ArrayList<>(resultDistinctNodes.list());
             });
         }
     }

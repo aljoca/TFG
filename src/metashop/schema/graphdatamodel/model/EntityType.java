@@ -12,22 +12,27 @@ import java.util.stream.Collectors;
 public class EntityType {
 
     private final ArrayList<Label> labels;
-    private final ArrayList<StructuralVariation> structuralVariations;
+    private final StructuralVariation structuralVariations;
     private final String name;
+
+    private static final int LABELS_INDEX = 0;
+    private static final int PROPERTIES_INDEX = 1;
+
 
 
     public EntityType(Record node) {
-        this.structuralVariations = new ArrayList<>();
         this.labels = generateEntityLabels(node);
-//        this.structuralVariations = generateStructuralVariations(record);
         // Para setear el nombre, concateno el nombre de todas las etiquetas
         this.name = labels.stream().map(Label::getName).collect(Collectors.joining());
+        this.structuralVariations = generateStructuralVariations(node);
+
     }
 
 
-    public ArrayList<StructuralVariation> generateStructuralVariations(Record record) {
-        ArrayList<StructuralVariation> structuralVariations = new ArrayList<>();
-        return structuralVariations;
+    public StructuralVariation generateStructuralVariations(Record node) {
+        ArrayList<Value> properties = new ArrayList<>();
+        node.values().get(PROPERTIES_INDEX).values().forEach(properties::add);
+        return new StructuralVariation(properties);
     }
 
     /**
@@ -39,7 +44,7 @@ public class EntityType {
     public static ArrayList<Label> generateEntityLabels(Record node){
         ArrayList<Label> labels = new ArrayList<>();
         // No me queda más remedio que obtener las etiquetas así por la estructura de un nodo en Neo4J
-        (node.values().get(0)).asNode().labels().forEach(label -> labels.add(new Label(label)));
+        node.values().get(LABELS_INDEX).values().forEach(label -> labels.add(new Label(label.asString())));
         return labels;
     }
 

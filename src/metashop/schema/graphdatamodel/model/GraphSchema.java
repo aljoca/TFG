@@ -12,6 +12,8 @@ public class GraphSchema{
     private final String name;
     private final HashMap<String, EntityType> entities;
     private final ArrayList<RelationshipType> relationships;
+    private int entityTypeStructuralVariationIndex = 1;
+    private int relationshipTypeStructuralVariationIndex = 1;
     private static final int ORIGIN_ENTITY_TYPE_INDEX = 0;
     private static final int DESTINATION_ENTITY_TYPE_INDEX = 1;
 
@@ -33,8 +35,7 @@ public class GraphSchema{
         HashMap<String, EntityType> entityTypes = new HashMap<>();
         nodes.forEach((Record node) -> {
             EntityType entityType = new EntityType(node);
-            if (!entityTypes.containsKey(entityType.getName()))
-                entityTypes.put(entityType.getName(), entityType);
+            entityTypes.put(entityType.getName(), entityType);
         });
         return entityTypes;
     }
