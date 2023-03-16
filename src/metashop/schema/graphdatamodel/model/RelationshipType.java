@@ -13,14 +13,20 @@ public class RelationshipType {
     private final Label label;
     private EntityType origin;
     private EntityType destination;
-    private final ArrayList<StructuralVariation> structuralVariations;
-    private final static int RELATIONSHIP_ENTITY_TYPE_INDEX = 2;
-
+    private final StructuralVariation structuralVariation;
+    private final static int RELATIONSHIP_LABEL_INDEX = 0;
+    private static final int RELATIONSHIP_PROPERTIES_INDEX = 1;
 
     public RelationshipType(Record relationship){
-         this.label = generateRelationshipLabels(relationship);
-         this.structuralVariations = new ArrayList<>();
+         this.label = generateRelationshipLabel(relationship);
+         this.structuralVariation = generateStructuralVariation(relationship);
      }
+
+    public StructuralVariation generateStructuralVariation(Record node) {
+        ArrayList<Value> properties = new ArrayList<>();
+        node.values().get(RELATIONSHIP_PROPERTIES_INDEX).values().forEach(properties::add);
+        return new StructuralVariation(properties);
+    }
 
     /**
      * Método para extraer la etiqueta de la relación
@@ -28,9 +34,9 @@ public class RelationshipType {
      * @param relationship Relación para la que se quiere extraer la etiqueta. En este caso, asumimos que solo puede tener una etiqueta.
      * @return Etiqueta de la relación
      */
-    public static Label generateRelationshipLabels(Record relationship){
-       Value relationshipValue = relationship.values().get(RELATIONSHIP_ENTITY_TYPE_INDEX);
-       return new Label(((Relationship)(relationshipValue.asObject())).type());
+    public static Label generateRelationshipLabel(Record relationship){
+       String relationshipValue = relationship.values().get(RELATIONSHIP_LABEL_INDEX).asString();
+       return new Label(relationshipValue);
     }
 
     public void setOrigin(EntityType origin) {
@@ -58,11 +64,11 @@ public class RelationshipType {
 
     @Override
     public String toString() {
-        return "RelationshipType{" +
+        return "\nRelationshipType{" +
                 "label=" + label +
                 ",origin=" + origin +
                 ",destination=" + destination +
-                ",structuralVariations=" + structuralVariations +
+                ",structuralVariations=" + structuralVariation +
                 "}";
     }
 }

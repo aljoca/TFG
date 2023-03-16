@@ -12,10 +12,8 @@ public class GraphSchema{
     private final String name;
     private final HashMap<String, EntityType> entities;
     private final ArrayList<RelationshipType> relationships;
-    private int entityTypeStructuralVariationIndex = 1;
-    private int relationshipTypeStructuralVariationIndex = 1;
-    private static final int ORIGIN_ENTITY_TYPE_INDEX = 0;
-    private static final int DESTINATION_ENTITY_TYPE_INDEX = 1;
+    private static final int ORIGIN_ENTITY_TYPE_INDEX = 2;
+    private static final int DESTINATION_ENTITY_TYPE_INDEX = 3;
 
 
     public GraphSchema(String name, ArrayList<Record> nodes, ArrayList<Record> relationships) {
@@ -50,16 +48,9 @@ public class GraphSchema{
         ArrayList<RelationshipType> relationshipTypes = new ArrayList<>();
         relationships.forEach((Record relationship) -> {
             RelationshipType relationshipType = new RelationshipType(relationship);
-            if (!relationshipTypes.contains(relationshipType)) {
-                // Obtengo los nombres de los nodos origen y destino para buscarlos en la colección de EntityType
-                String origin = String.join("", (Collections.singleton(String.join("", ((((Node) relationship.values().get(ORIGIN_ENTITY_TYPE_INDEX).asObject()).labels()))))));
-                String destination = String.join("", (Collections.singleton(String.join("", ((((Node) relationship.values().get(DESTINATION_ENTITY_TYPE_INDEX).asObject()).labels()))))));
-                ArrayList<EntityType> originAndDestination = getOriginAndDestination(origin, destination);
-                // Seteo estos dos atributos aquí en vez de al crear la relación, ya que así me ahorro estas búsquedas si la relación ya existe.
-                relationshipType.setOrigin(originAndDestination.get(ORIGIN_ENTITY_TYPE_INDEX));
-                relationshipType.setDestination(originAndDestination.get(DESTINATION_ENTITY_TYPE_INDEX));
-                relationshipTypes.add(relationshipType);
-            }
+            relationshipType.setOrigin(entities.get(relationship.values().get(ORIGIN_ENTITY_TYPE_INDEX).asString()));
+            relationshipType.setDestination(entities.get(relationship.values().get(DESTINATION_ENTITY_TYPE_INDEX).asString()));
+            relationshipTypes.add(relationshipType);
         });
         return relationshipTypes;
     }
@@ -85,7 +76,7 @@ public class GraphSchema{
         return "GraphSchema{" +
                 "name='" + name +
                 ",entities=" + entities.values() +
-                ",relationships=" + relationships +
+                ",\nrelationships=" + relationships +
                 "}";
     }
 

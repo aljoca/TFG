@@ -2,7 +2,6 @@ package metashop.schema.graphdatamodel.model;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.types.Node;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -15,23 +14,20 @@ public class EntityType {
     private final StructuralVariation structuralVariations;
     private final String name;
 
-    private static final int LABELS_INDEX = 0;
-    private static final int PROPERTIES_INDEX = 1;
-
-
+    private static final int ENTITY_TYPE_NAME_INDEX = 0;
+    private static final int ENTITY_TYPE_LABELS_INDEX = 1;
+    private static final int ENTITY_TYPE_PROPERTIES_INDEX = 2;
 
     public EntityType(Record node) {
         this.labels = generateEntityLabels(node);
-        // Para setear el nombre, concateno el nombre de todas las etiquetas
-        this.name = labels.stream().map(Label::getName).collect(Collectors.joining());
+        this.name = node.get(ENTITY_TYPE_NAME_INDEX).asString();
         this.structuralVariations = generateStructuralVariations(node);
 
     }
 
-
     public StructuralVariation generateStructuralVariations(Record node) {
         ArrayList<Value> properties = new ArrayList<>();
-        node.values().get(PROPERTIES_INDEX).values().forEach(properties::add);
+        node.values().get(ENTITY_TYPE_PROPERTIES_INDEX).values().forEach(properties::add);
         return new StructuralVariation(properties);
     }
 
@@ -44,7 +40,7 @@ public class EntityType {
     public static ArrayList<Label> generateEntityLabels(Record node){
         ArrayList<Label> labels = new ArrayList<>();
         // No me queda más remedio que obtener las etiquetas así por la estructura de un nodo en Neo4J
-        node.values().get(LABELS_INDEX).values().forEach(label -> labels.add(new Label(label.asString())));
+        node.values().get(ENTITY_TYPE_LABELS_INDEX).values().forEach(label -> labels.add(new Label(label.asString())));
         return labels;
     }
 

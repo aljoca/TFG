@@ -8,8 +8,8 @@ import metashop.schema.graphdatamodel.model.type.Type;
 
 public class Property {
 
-    private String name;
-    private Type type;
+    private final String name;
+    private final Type type;
 
     public Property(String name, String type) {
         this.name = name;

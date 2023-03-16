@@ -26,7 +26,7 @@ public abstract class MetaShopSchema implements AutoCloseable{
             return session.executeWrite(tx -> {
                 /*
                     Explicación de la siguiente query en Cypher:
-                        Obtengo los nodos con sus labels y keys.
+                        Obtengo los nodos con sus labels y propiedades.
                         Agrupo las labels y elimino los duplicados que aparecen al unir todas las propiedades.
                         Devuelvo una tabla tipo-propiedades.
 
@@ -35,7 +35,7 @@ public abstract class MetaShopSchema implements AutoCloseable{
                         Obtengo los nodos que no tienen propiedades
                         Devuelvo una tabla tipo-propiedades
                 */
-                Query queryDistinctNodes = new Query("""
+                Query query = new Query("""
                         MATCH (n)
                         WITH labels(n) as tipo, keys(n) as propiedades, n
                         UNWIND propiedades AS propiedad
@@ -48,15 +48,15 @@ public abstract class MetaShopSchema implements AutoCloseable{
                              WHEN toBoolean(valor) IS NOT NULL THEN 'boolean'
                              ELSE 'string'
                              END AS tipo_dato
-                        RETURN tipo, collect(DISTINCT [propiedad, tipo_dato]) AS propiedades_tipo_dato              
+                        RETURN reduce(s = '', x IN tipo | s + x) AS tipoNodo, tipo as labels, collect(DISTINCT [propiedad, tipo_dato]) AS propiedades_tipo_dato              
                         UNION
                         MATCH (n)
                         WHERE size(keys(n)) = 0
                         WITH labels(n) as tipo, [] as propiedades_tipo_dato
-                        return tipo, propiedades_tipo_dato
+                        return  reduce(s = '', x IN tipo | s + x) AS tipoNodo, tipo as labels, propiedades_tipo_dato
                         """);
-                Result resultDistinctNodes = tx.run(queryDistinctNodes);
-                return new ArrayList<>(resultDistinctNodes.list());
+                Result resultNodes = tx.run(query);
+                return new ArrayList<>(resultNodes.list());
             });
         }
     }
@@ -70,7 +70,38 @@ public abstract class MetaShopSchema implements AutoCloseable{
     private static ArrayList<Record> getRelationships(){
         try (Session session = driver.session()) {
             return session.executeWrite(tx -> {
-                Query query = new Query("MATCH (n)-[r]->(m) RETURN n,m,r");
+                /*
+                    Explicación de la siguiente query en Cypher:
+                        Obtengo las relaciones con sus tipos y propiedades.
+                        Agrupo las labels y elimino los duplicados que aparecen al unir todas las propiedades.
+                        Devuelvo una tabla tipo-propiedades.
+
+                        UNION
+
+                        Obtengo los nodos que no tienen propiedades
+                        Devuelvo una tabla tipo-propiedades
+                 */
+                Query query = new Query("""
+                        MATCH ()-[r]->()
+                        WITH type(r) as tipo, keys(r) as propiedades, r
+                        UNWIND propiedades AS propiedad
+                        WITH tipo, propiedad, r[propiedad] AS valor, startNode(r) as origen, endNode(r) as destino
+                        WITH tipo, propiedad, valor, origen, destino,
+                             CASE
+                                  WHEN valor IS NULL THEN 'null'
+                                  WHEN (valor + '') =~ '^-?[0-9]+$' THEN 'integer'
+                                  WHEN (valor + '') =~ '^-?[0-9]+\\.[0-9]+$' THEN 'float'
+                                  WHEN toBoolean(valor) IS NOT NULL THEN 'boolean'
+                                  ELSE 'string'
+                             END AS tipo_dato
+                        RETURN tipo, collect(DISTINCT [propiedad, tipo_dato]) AS propiedades_tipo_dato, reduce(s = '', x IN labels(origen) | s + x) AS origin, reduce(s = '', x IN labels(destino) | s + x) AS destination
+                        UNION
+                        MATCH ()-[r]->()
+                        WHERE size(keys(r)) = 0
+                        WITH type(r) as tipo, [] as propiedades_tipo_dato, startNode(r) as origen, endNode(r) as destino
+                        RETURN tipo, propiedades_tipo_dato, reduce(s = '', x IN labels(origen) | s + x) AS origin, reduce(s = '', x IN labels(destino) | s + x) AS destination
+                                                
+                        """);
                 Result result = tx.run(query);
                 return new ArrayList<>(result.list());
             });
