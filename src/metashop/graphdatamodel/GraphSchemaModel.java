@@ -1,16 +1,16 @@
-package metashop.schema.graphdatamodel.model;
+package metashop.graphdatamodel;
 
 import org.neo4j.driver.Record;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class GraphSchema{
+public class GraphSchemaModel {
 
     private final String name;
     private final HashMap<String, EntityType> entities;
     private final ArrayList<RelationshipType> relationships;
 
-    public GraphSchema(String name, ArrayList<Record> nodes, ArrayList<Record> relationships) {
+    public GraphSchemaModel (String name, ArrayList<Record> nodes, ArrayList<Record> relationships) {
         this.name = name;
         this.entities = addEntities(nodes);
         this.relationships = addRelationships(relationships);
@@ -47,6 +47,18 @@ public class GraphSchema{
             relationshipTypes.add(relationshipType);
         });
         return relationshipTypes;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public HashMap<String, EntityType> getEntities() {
+        return entities;
+    }
+
+    public ArrayList<RelationshipType> getRelationships() {
+        return relationships;
     }
 
     @Override

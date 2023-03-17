@@ -1,9 +1,7 @@
-package metashop.schema.graphdatamodel.model;
+package metashop.graphdatamodel;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.types.Relationship;
-
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -24,16 +22,22 @@ public class RelationshipType {
          this.structuralVariation = generateStructuralVariation(relationship);
      }
 
-    public StructuralVariation generateStructuralVariation(Record node) {
+    /**
+     * Método para generar la Structural Variation de la relación
+     * @see StructuralVariation
+     * @param relationship Relación para la que se quiere generar la Structural Variation. En este caso, asumimos que solo puede tener una Structural Variation
+     * @return
+     */
+    public StructuralVariation generateStructuralVariation(Record relationship) {
         ArrayList<Value> properties = new ArrayList<>();
-        node.values().get(RELATIONSHIP_PROPERTIES_INDEX).values().forEach(properties::add);
+        relationship.values().get(RELATIONSHIP_PROPERTIES_INDEX).values().forEach(properties::add);
         return (!properties.isEmpty()) ? new StructuralVariation(properties) : null;
     }
 
     /**
-     * Método para extraer la etiqueta de la relación
+     * Método para generar la etiqueta de la relación
      * @see Label
-     * @param relationship Relación para la que se quiere extraer la etiqueta. En este caso, asumimos que solo puede tener una etiqueta.
+     * @param relationship Relación para la que se quiere generar la etiqueta. En este caso, asumimos que solo puede tener una etiqueta.
      * @return Etiqueta de la relación
      */
     public static Label generateRelationshipLabel(Record relationship){

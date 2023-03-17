@@ -1,4 +1,4 @@
-package metashop.schema.graphdatamodel.model.type;
+package metashop.graphdatamodel.type;
 
 public class PrimitiveType extends Type{
     private final String name;

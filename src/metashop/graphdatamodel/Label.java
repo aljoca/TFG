@@ -1,4 +1,4 @@
-package metashop.schema.graphdatamodel.model;
+package metashop.graphdatamodel;
 
 import java.util.Objects;
 

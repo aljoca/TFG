@@ -1,9 +1,9 @@
-package metashop.schema.graphdatamodel.model;
+package metashop.graphdatamodel;
 
 import metashop.MetaShopSchema;
-import metashop.schema.graphdatamodel.model.type.Array;
-import metashop.schema.graphdatamodel.model.type.PrimitiveType;
-import metashop.schema.graphdatamodel.model.type.Type;
+import metashop.graphdatamodel.type.Array;
+import metashop.graphdatamodel.type.PrimitiveType;
+import metashop.graphdatamodel.type.Type;
 import org.apache.commons.lang3.StringUtils;
 
 

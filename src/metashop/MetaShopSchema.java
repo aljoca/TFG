@@ -1,12 +1,11 @@
 package metashop;
 
-import metashop.schema.graphdatamodel.model.GraphSchema;
+import metashop.graphdatamodel.GraphSchemaModel;
+import metashop.uschema.USchemaModel;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 public abstract class MetaShopSchema implements AutoCloseable{
@@ -63,8 +62,11 @@ public abstract class MetaShopSchema implements AutoCloseable{
 
     public static void main(String... args) {
         driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
-        GraphSchema graphSchema = new GraphSchema("MetaShop", getNodes(), getRelationships());
+        GraphSchemaModel graphSchema = new GraphSchemaModel("MetaShop", getNodes(), getRelationships());
         System.out.println(graphSchema);
+
+        USchemaModel uSchemaModel = new USchemaModel(graphSchema);
+        System.out.println(uSchemaModel);
     }
 
 }

@@ -1,11 +1,10 @@
-package metashop.schema.graphdatamodel.model;
+package metashop.graphdatamodel;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 
 public class EntityType {
@@ -48,6 +47,10 @@ public class EntityType {
         return name;
     }
 
+    public ArrayList<Label> getLabels() {
+        return labels;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -64,7 +67,7 @@ public class EntityType {
 
     @Override
     public String toString() {
-        return "EntityType{" +
+        return "\nEntityType{" +
                 "labels=" + labels +
                 ", name='" + name +
                 "', structuralVariations=" + structuralVariations +

@@ -1,4 +1,4 @@
-package metashop.schema.graphdatamodel.model.type;
+package metashop.graphdatamodel.type;
 
 public class Array extends Type{
 
