@@ -11,6 +11,6 @@ public class PrimitiveType extends Type{
     public String toString() {
         return "PrimitiveType{" +
                 "name='" + name +
-                '}';
+                "'}";
     }
 }

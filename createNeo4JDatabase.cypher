@@ -6,7 +6,7 @@
 CREATE CONSTRAINT IF NOT EXISTS FOR (u:User) REQUIRE u.__userId IS UNIQUE;
 CREATE CONSTRAINT IF NOT EXISTS FOR (u:User) REQUIRE u.email IS UNIQUE;
 LOAD CSV WITH HEADERS FROM 'file:///MetaShop/USER.csv' AS user
-CREATE (:User {__userId: toInteger(user.__userId), name: user.name, email: user.email, password: user.password, shippingAddress: user.shippingAddress, country: user.country, registerDate: user.registerDate, shopOpinion: user.shopOpinion, isPremium: user.isPremium});
+CREATE (:User {__userId: toInteger(user.__userId), name: user.name, email: user.email, password: user.password, shippingAddress: user.shippingAddress, country: user.country, registerDate: user.registerDate, shopOpinion: user.shopOpinion, isPremium: toBoolean(user.isPremium)});
 
 //Crear MANUFACTURER
 CREATE CONSTRAINT IF NOT EXISTS FOR (m:Manufacturer) REQUIRE m.__manufacturerId IS UNIQUE;
@@ -40,7 +40,7 @@ CREATE (:ProductCategory {__productCategoryId: toInteger(productCategory.__produ
 // Crear DISCOUNT
 CREATE CONSTRAINT IF NOT EXISTS FOR (d:Discount) REQUIRE d.__discountId IS UNIQUE;
 LOAD CSV WITH HEADERS FROM 'file:///MetaShop/DISCOUNT.csv' AS discount
-CREATE (:Discount {__discountId: toInteger(discount.__discountId), value: toFloat(discount.value), info: discount.info});
+CREATE (:Discount {__discountId: toInteger(discount.__discountId), value: discount.value, info: discount.info});
 
 // RELACIONES
 // Crear relación RECOMMENDED_BY (User a User)
@@ -59,7 +59,7 @@ CREATE (p1)-[:RELATED_TO]->(p2);
 LOAD CSV WITH HEADERS FROM 'file:///MetaShop/relations/IN_ORDER.csv' AS inOrder
 MATCH (p:Product {__productId: toInteger(inOrder.__productId)})
 MATCH (o:Order {__orderId: toInteger(inOrder.__orderId)})
-CREATE (p)-[i:IN_ORDER {quantity: inOrder.quantity, subPrice: toFloat(p.price)*toInteger(inOrder.quantity)}]->(o);
+CREATE (p)-[i:IN_ORDER {quantity: toInteger(inOrder.quantity), subPrice: toFloat(p.price)*toInteger(inOrder.quantity)}]->(o);
 MATCH (p:Product)-[i:IN_ORDER]->(o:Order)
 WITH o, SUM(toFloat(p.price) * toFloat(i.quantity)) AS totalPrice
 SET o.totalPrice = totalPrice;

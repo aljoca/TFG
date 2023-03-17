@@ -67,7 +67,7 @@ public class EntityType {
         return "EntityType{" +
                 "labels=" + labels +
                 ", name='" + name +
-                ", structuralVariations=" + structuralVariations +
+                "', structuralVariations=" + structuralVariations +
                 "}";
     }
 }

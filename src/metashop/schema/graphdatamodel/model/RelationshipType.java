@@ -15,7 +15,9 @@ public class RelationshipType {
     private EntityType destination;
     private final StructuralVariation structuralVariation;
     private final static int RELATIONSHIP_LABEL_INDEX = 0;
-    private static final int RELATIONSHIP_PROPERTIES_INDEX = 1;
+    public final static int ORIGIN_ENTITY_TYPE_INDEX = 1;
+    public final static int DESTINATION_ENTITY_TYPE_INDEX = 2;
+    private static final int RELATIONSHIP_PROPERTIES_INDEX = 3;
 
     public RelationshipType(Record relationship){
          this.label = generateRelationshipLabel(relationship);
@@ -25,7 +27,7 @@ public class RelationshipType {
     public StructuralVariation generateStructuralVariation(Record node) {
         ArrayList<Value> properties = new ArrayList<>();
         node.values().get(RELATIONSHIP_PROPERTIES_INDEX).values().forEach(properties::add);
-        return new StructuralVariation(properties);
+        return (!properties.isEmpty()) ? new StructuralVariation(properties) : null;
     }
 
     /**
@@ -66,9 +68,9 @@ public class RelationshipType {
     public String toString() {
         return "\nRelationshipType{" +
                 "label=" + label +
-                ",origin=" + origin +
-                ",destination=" + destination +
-                ",structuralVariations=" + structuralVariation +
+                ",origin='" + origin.getName() +
+                "',destination='" + destination.getName() +
+                "',structuralVariations=" + structuralVariation +
                 "}";
     }
 }
