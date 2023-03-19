@@ -8,6 +8,10 @@ public class Array extends Type{
         this.primitiveType = new PrimitiveType(array);
     }
 
+    public PrimitiveType getPrimitiveType() {
+        return primitiveType;
+    }
+
     @Override
     public String toString() {
         return "Array{" +

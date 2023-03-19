@@ -18,8 +18,10 @@ public class USchemaModel {
     private final String uName;
     private final HashMap<String, UEntityType> uEntities;
     private final HashMap<String, URelationshipType> uRelationships;
+    private final GraphSchemaModel graphSchemaModel;
 
     public USchemaModel(GraphSchemaModel graphSchemaModel) {
+        this.graphSchemaModel = graphSchemaModel;
         this.uName = graphSchemaModel.getName();
         this.uEntities = new HashMap<>();
         this.uRelationships = new HashMap<>();
@@ -46,7 +48,7 @@ public class USchemaModel {
 
         if (entityType.getLabels().size() == 1) {
             if (!this.uEntities.containsKey(entityType.getName()))
-                this.uEntities.put(entityType.getName(), new UEntityTypeSingleLabeled(entityType.getName()));
+                this.uEntities.put(entityType.getName(), new UEntityTypeSingleLabeled(entityType.getName(), entityType));
         }
         else {
             List<UEntityType> parentEntities = new LinkedList<>();
@@ -61,14 +63,14 @@ public class USchemaModel {
                         Si existe, solamente la añado a la lista de entidades "padre".
                     */
                 if (!this.uEntities.containsKey(labelName)) {
-                    UEntityType uEntityType = new UEntityTypeSingleLabeled(labelName);
+                    UEntityType uEntityType = new UEntityTypeSingleLabeled(labelName, graphSchemaModel.getEntities().get(labelName));
                     parentEntities.add(uEntityType);
                     this.uEntities.put(label.getName(), uEntityType);
                 } else {
                     parentEntities.add(this.uEntities.get(labelName));
                 }
             });
-            this.uEntities.put(entityType.getName(), new UEntityTypeMultiLabeled(entityType.getName(), parentEntities));
+            this.uEntities.put(entityType.getName(), new UEntityTypeMultiLabeled(entityType.getName(), entityType, parentEntities));
         }
     }
 

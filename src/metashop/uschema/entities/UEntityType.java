@@ -1,7 +1,11 @@
 package metashop.uschema.entities;
 
+import metashop.graphdatamodel.EntityType;
+import metashop.graphdatamodel.StructuralVariation;
 import metashop.uschema.UStructuralVariation;
 import metashop.uschema.features.UReference;
+
+import java.util.Objects;
 
 public abstract class UEntityType {
 
@@ -9,10 +13,14 @@ public abstract class UEntityType {
     private final String name;
     private final UStructuralVariation uStructuralVariation;
 
-    public UEntityType(String name) {
+    public UEntityType(String name, EntityType entityType) {
         this.name = name;
         this.root = true;
         this.uStructuralVariation = new UStructuralVariation();
+        StructuralVariation structuralVariation = entityType.getStructuralVariation();
+        if (Objects.nonNull(structuralVariation)){
+            this.uStructuralVariation.generateUAttributes(structuralVariation.getProperties());
+        }
     }
 
     public boolean isRoot() {
@@ -23,7 +31,7 @@ public abstract class UEntityType {
         return name;
     }
 
-    public UStructuralVariation getuStructuralVariation() {
+    public UStructuralVariation getUStructuralVariation() {
         return uStructuralVariation;
     }
 

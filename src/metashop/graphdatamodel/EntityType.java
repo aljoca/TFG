@@ -10,7 +10,7 @@ import java.util.Objects;
 public class EntityType {
 
     private final ArrayList<Label> labels;
-    private final StructuralVariation structuralVariations;
+    private final StructuralVariation structuralVariation;
     private final String name;
 
     private static final int ENTITY_TYPE_NAME_INDEX = 0;
@@ -20,7 +20,7 @@ public class EntityType {
     public EntityType(Record node) {
         this.labels = generateEntityLabels(node);
         this.name = node.get(ENTITY_TYPE_NAME_INDEX).asString();
-        this.structuralVariations = generateStructuralVariations(node);
+        this.structuralVariation = generateStructuralVariations(node);
 
     }
 
@@ -51,6 +51,10 @@ public class EntityType {
         return labels;
     }
 
+    public StructuralVariation getStructuralVariation() {
+        return structuralVariation;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -62,7 +66,7 @@ public class EntityType {
 
     @Override
     public int hashCode() {
-        return Objects.hash(labels, structuralVariations, name);
+        return Objects.hash(labels, structuralVariation, name);
     }
 
     @Override
@@ -70,7 +74,7 @@ public class EntityType {
         return "\nEntityType{" +
                 "labels=" + labels +
                 ", name='" + name +
-                "', structuralVariations=" + structuralVariations +
+                "', structuralVariation=" + structuralVariation +
                 "}";
     }
 }

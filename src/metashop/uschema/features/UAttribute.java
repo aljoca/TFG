@@ -1,7 +1,11 @@
 package metashop.uschema.features;
 
 import metashop.graphdatamodel.Property;
+import metashop.graphdatamodel.type.Array;
+import metashop.graphdatamodel.type.PrimitiveType;
 import metashop.graphdatamodel.type.Type;
+import metashop.uschema.types.UList;
+import metashop.uschema.types.UPrimitiveType;
 import metashop.uschema.types.UType;
 
 public class UAttribute extends UStructuralFeature {
@@ -14,6 +18,12 @@ public class UAttribute extends UStructuralFeature {
     }
 
     private UType generateUType(Type type){
-        return null;
+        if  (type instanceof PrimitiveType) {
+            return new UPrimitiveType(((PrimitiveType) type).getName());
+        }
+        else{
+            UPrimitiveType uPrimitiveType = new UPrimitiveType(((Array)type).getPrimitiveType().getName());
+            return new UList(uPrimitiveType);
+        }
     }
 }

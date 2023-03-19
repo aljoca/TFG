@@ -1,11 +1,8 @@
 package metashop.uschema;
 
 import metashop.graphdatamodel.Property;
-import metashop.graphdatamodel.RelationshipType;
-import metashop.graphdatamodel.StructuralVariation;
 import metashop.uschema.features.UAttribute;
 import metashop.uschema.features.UFeature;
-import metashop.uschema.features.UReference;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,7 +23,9 @@ public class UStructuralVariation {
         features.put(uFeature.getName(), uFeature);
     }
     public void generateUAttributes(ArrayList<Property> properties){
-
+        properties.forEach(property -> {
+            features.put(property.getName(), new UAttribute(property));
+        });
     }
 
     @Override
