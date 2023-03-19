@@ -21,6 +21,14 @@ public class Property {
         return (MetaShopSchema.types.contains(type)) ?  new PrimitiveType(type) : new Array(StringUtils.substringBefore(type, "Array"));
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
     @Override
     public String toString() {
         return "Property{" +

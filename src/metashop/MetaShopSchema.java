@@ -55,6 +55,22 @@ public abstract class MetaShopSchema implements AutoCloseable{
         }
     }
 
+    private static ArrayList<Record> getRelationshipsCardinality(){
+        try (Session session = driver.session()) {
+            return session.executeWrite(tx -> {
+                Query query = new Query("""
+                        MATCH (n)-[r]->()
+                        WITH id(n) AS id_nodo, labels(n) AS etiquetas, type(r) AS tipo_relacion, COUNT(*) AS cardinalidad
+                        UNWIND etiquetas AS etiqueta
+                        WITH etiqueta, tipo_relacion, MAX(cardinalidad) AS max_cardinalidad
+                        RETURN etiqueta, tipo_relacion, max_cardinalidad            
+                        """);
+                Result result = tx.run(query);
+                return new ArrayList<>(result.list());
+            });
+        }
+    }
+
     @Override
     public void close(){
         driver.close();
@@ -62,7 +78,7 @@ public abstract class MetaShopSchema implements AutoCloseable{
 
     public static void main(String... args) {
         driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
-        GraphSchemaModel graphSchema = new GraphSchemaModel("MetaShop", getNodes(), getRelationships());
+        GraphSchemaModel graphSchema = new GraphSchemaModel("MetaShop", getNodes(), getRelationships(), getRelationshipsCardinality());
         System.out.println(graphSchema);
 
         USchemaModel uSchemaModel = new USchemaModel(graphSchema);

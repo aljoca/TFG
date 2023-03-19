@@ -16,6 +16,10 @@ public class StructuralVariation {
                 new Property(property.get(PROPERTY_NAME_INDEX).asString(), property.get(PROPERTY_TYPE_INDEX).asString())));
     }
 
+    public ArrayList<Property> getProperties() {
+        return properties;
+    }
+
     @Override
     public String toString() {
         return "StructuralVariation{" +

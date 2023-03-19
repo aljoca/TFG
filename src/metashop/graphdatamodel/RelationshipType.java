@@ -16,6 +16,7 @@ public class RelationshipType {
     public final static int ORIGIN_ENTITY_TYPE_INDEX = 1;
     public final static int DESTINATION_ENTITY_TYPE_INDEX = 2;
     private static final int RELATIONSHIP_PROPERTIES_INDEX = 3;
+    private int maxCardinality;
 
     public RelationshipType(Record relationship){
          this.label = generateRelationshipLabel(relationship);
@@ -45,12 +46,36 @@ public class RelationshipType {
        return new Label(relationshipValue);
     }
 
+    public StructuralVariation getStructuralVariation() {
+        return structuralVariation;
+    }
+
+    public EntityType getOrigin() {
+        return origin;
+    }
+
+    public EntityType getDestination() {
+        return destination;
+    }
+
     public void setOrigin(EntityType origin) {
         this.origin = origin;
     }
 
     public void setDestination(EntityType destination) {
         this.destination = destination;
+    }
+
+    public void setMaxCardinality(int maxCardinality) {
+        this.maxCardinality = maxCardinality;
+    }
+
+    public int getMaxCardinality() {
+        return maxCardinality;
+    }
+
+    public String getName(){
+        return this.label.getName();
     }
 
     @Override

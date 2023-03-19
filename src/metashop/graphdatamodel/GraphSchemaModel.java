@@ -10,10 +10,10 @@ public class GraphSchemaModel {
     private final HashMap<String, EntityType> entities;
     private final ArrayList<RelationshipType> relationships;
 
-    public GraphSchemaModel (String name, ArrayList<Record> nodes, ArrayList<Record> relationships) {
+    public GraphSchemaModel (String name, ArrayList<Record> nodes, ArrayList<Record> relationships, ArrayList<Record> relationshipsCardinality) {
         this.name = name;
         this.entities = addEntities(nodes);
-        this.relationships = addRelationships(relationships);
+        this.relationships = addRelationships(relationships, relationshipsCardinality);
     }
 
     /**
@@ -38,15 +38,23 @@ public class GraphSchemaModel {
      * @param relationships Conjunto de relaciones
      * @return ArrayList de RelationshipType
      */
-    private ArrayList<RelationshipType> addRelationships(ArrayList<Record> relationships){
+    private ArrayList<RelationshipType> addRelationships(ArrayList<Record> relationships, ArrayList<Record> relationshipsCardinality){
         ArrayList<RelationshipType> relationshipTypes = new ArrayList<>();
+        HashMap<String, Integer> maxCardinality = getRelationshipsCardinality(relationshipsCardinality);
         relationships.forEach((Record relationship) -> {
             RelationshipType relationshipType = new RelationshipType(relationship);
+            relationshipType.setMaxCardinality(maxCardinality.get(relationshipType.getName()));
             relationshipType.setOrigin(entities.get(relationship.values().get(RelationshipType.ORIGIN_ENTITY_TYPE_INDEX).asString()));
             relationshipType.setDestination(entities.get(relationship.values().get(RelationshipType.DESTINATION_ENTITY_TYPE_INDEX).asString()));
             relationshipTypes.add(relationshipType);
         });
         return relationshipTypes;
+    }
+
+    private HashMap<String, Integer> getRelationshipsCardinality(ArrayList<Record> relationshipsCardinality){
+        HashMap<String, Integer> maxCardinality = new HashMap<>();
+        relationshipsCardinality.forEach(relationshipCardinality -> maxCardinality.put(relationshipCardinality.values().get(1).asString(), relationshipCardinality.values().get(2).asInt()));
+        return maxCardinality;
     }
 
     public String getName() {
