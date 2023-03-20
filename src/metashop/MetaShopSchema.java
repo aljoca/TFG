@@ -109,9 +109,7 @@ public abstract class MetaShopSchema implements AutoCloseable{
             ArrayList<Label> labels = graphSchemaModel.getEntities().get(entityName).getLabels();
             ArrayList<Record> dataNodes;
             if (labels.size() > 1) {
-                for (Label label: labels) {
-                    condition.append("n:").append(label.getName()).append(" AND ");
-                }
+                labels.forEach(label -> condition.append("n:").append(label.getName()).append(" AND "));
                 String finalCondition = StringUtils.substring(condition.toString(), 0, condition.length() - 4);
                 dataNodes = getDataNodes(finalCondition);
             }

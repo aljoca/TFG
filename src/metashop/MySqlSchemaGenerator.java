@@ -16,20 +16,15 @@ public class MySqlSchemaGenerator {
             ArrayList<String> properties = new ArrayList<>();
             HashMap<String, UAttribute> attributes = uEntity.getUStructuralVariation().getAttributes();
             UKey key = uEntity.getUStructuralVariation().getKey();
-
             for (UAttribute uAttribute: attributes.values()) {
                     properties.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType)uAttribute.getType()) + transformMandatoryToMySQL(uAttribute.isMandatory()));
             }
             StringBuilder primaryKey = new StringBuilder("PRIMARY KEY(");
-            for (UAttribute uAttribute: key.getUAttributes()) {
-                primaryKey.append(uAttribute.getName()).append(",");
-            }
+            key.getUAttributes().forEach(uAttribute -> primaryKey.append(uAttribute.getName()).append(","));
             String pk = primaryKey.substring(0, primaryKey.length()-1);
             properties.add(pk + ")");
             StringBuilder create = new StringBuilder("CREATE TABLE " + uEntity.getName() + "(");
-            for (String property: properties) {
-                create.append(property).append(",");
-            }
+            properties.forEach(property -> create.append(property).append(","));
             String createTable = create.subSequence(0, create.length()-1) + ");";
             System.out.println(createTable);
         }
