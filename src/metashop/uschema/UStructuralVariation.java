@@ -4,6 +4,7 @@ import metashop.graphdatamodel.Property;
 import metashop.uschema.features.UAttribute;
 import metashop.uschema.features.UFeature;
 import metashop.uschema.features.UKey;
+import metashop.uschema.features.UReference;
 
 import java.security.Key;
 import java.util.ArrayList;
@@ -14,8 +15,10 @@ public class UStructuralVariation {
     private static int U_STRUCTURAL_VARIATION_IDENTIFIER = 1;
     private final int id;
     private final HashMap<String, UFeature> features;
+    private final USchemaType container;
 
-    public UStructuralVariation() {
+    public UStructuralVariation(USchemaType container) {
+        this.container = container;
         this.features = new HashMap<>();
         // Necesito que las referencias no se añadan de nuevo a la structuralVariation
         this.id = U_STRUCTURAL_VARIATION_IDENTIFIER++;
@@ -67,6 +70,7 @@ public class UStructuralVariation {
         }
         return attributes;
     }
+
     public UKey getKey(){
         for (UFeature uFeature: this.features.values()) {
             if (uFeature instanceof UKey){
@@ -76,6 +80,19 @@ public class UStructuralVariation {
         return null;
     }
 
+    public ArrayList<UReference> getReferences(){
+        ArrayList<UReference> references = new ArrayList<>();
+        for (UFeature uFeature: this.features.values()){
+            if (uFeature instanceof UReference){
+                references.add((UReference) uFeature);
+            }
+        }
+        return references;
+    }
+
+    public USchemaType getContainer() {
+        return container;
+    }
 
     @Override
     public String toString() {

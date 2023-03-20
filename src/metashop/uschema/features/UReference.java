@@ -6,7 +6,7 @@ import metashop.uschema.entities.UEntityType;
 public class UReference extends ULogicalFeature {
 
     private final UEntityType uEntityTypeDestination;
-    private final UStructuralVariation uStructuralVariation;
+    private final UStructuralVariation featuredBy;
     private final int lowerBoundCardinality;
 
     // Tengo que ver cómo calcular el upperBoundCardinality
@@ -15,7 +15,8 @@ public class UReference extends ULogicalFeature {
     public UReference(String referenceName, UEntityType destination, UStructuralVariation uStructuralVariation, int upperBoundCardinality) {
         super(referenceName, true);
         this.uEntityTypeDestination = destination;
-        this.uStructuralVariation = uStructuralVariation;
+        this.featuredBy = uStructuralVariation;
+        uStructuralVariation.addFeature(this);
         this.lowerBoundCardinality = 1;
         this.upperBoundCardinality = upperBoundCardinality;
     }
@@ -24,8 +25,8 @@ public class UReference extends ULogicalFeature {
         return uEntityTypeDestination;
     }
 
-    public UStructuralVariation getUStructuralVariation() {
-        return uStructuralVariation;
+    public UStructuralVariation getUStructuralVariationFeaturedBy() {
+        return featuredBy;
     }
 
     @Override

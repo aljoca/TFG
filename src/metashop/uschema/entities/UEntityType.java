@@ -2,24 +2,24 @@ package metashop.uschema.entities;
 
 import metashop.graphdatamodel.EntityType;
 import metashop.graphdatamodel.StructuralVariation;
+import metashop.uschema.USchemaType;
 import metashop.uschema.UStructuralVariation;
 import metashop.uschema.features.UReference;
 
 import java.util.Objects;
 
-public abstract class UEntityType {
+public abstract class UEntityType extends USchemaType{
 
     private final boolean root;
-    private final String name;
     private final UStructuralVariation uStructuralVariation;
 
     public UEntityType(String name, EntityType entityType) {
-        this.name = name;
+        super(name);
         this.root = true;
-        this.uStructuralVariation = new UStructuralVariation();
+        this.uStructuralVariation = new UStructuralVariation(this);
         StructuralVariation structuralVariation = entityType.getStructuralVariation();
         if (Objects.nonNull(structuralVariation)){
-            this.uStructuralVariation.generateFeatures(this.name, structuralVariation.getProperties());
+            this.uStructuralVariation.generateFeatures(name, structuralVariation.getProperties());
         }
     }
 
@@ -28,7 +28,7 @@ public abstract class UEntityType {
     }
 
     public String getName() {
-        return name;
+        return super.getName();
     }
 
     public UStructuralVariation getUStructuralVariation() {
@@ -43,7 +43,7 @@ public abstract class UEntityType {
     public String toString() {
         return "UEntityType{" +
                 "root=" + root +
-                ", name='" + name + '\'' +
+                ", name='" + super.getName() + '\'' +
                 '}';
     }
 }

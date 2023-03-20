@@ -4,25 +4,24 @@ import metashop.graphdatamodel.RelationshipType;
 import metashop.graphdatamodel.StructuralVariation;
 import java.util.Objects;
 
-public class URelationshipType {
+public class URelationshipType extends USchemaType{
 
-    private final String name;
     private final UStructuralVariation uStructuralVariation;
 
     public URelationshipType(RelationshipType relationshipType) {
-        this.name = relationshipType.getName();
+        super(relationshipType.getName());
 
         // Aquí viene la parte chunga, que es distinguir el tipo de relación de cada propiedad de la relación.
 
-        this.uStructuralVariation = new UStructuralVariation();
+        this.uStructuralVariation = new UStructuralVariation(this);
         StructuralVariation structuralVariation = relationshipType.getStructuralVariation();
         if (Objects.nonNull(structuralVariation)){
-            this.uStructuralVariation.generateFeatures(this.name, structuralVariation.getProperties());
+            this.uStructuralVariation.generateFeatures(super.getName(), structuralVariation.getProperties());
         }
     }
 
     public String getName() {
-        return name;
+        return super.getName();
     }
 
     public UStructuralVariation getuStructuralVariation() {
@@ -32,7 +31,7 @@ public class URelationshipType {
     @Override
     public String toString() {
         return "URelationshipType{" +
-                "name='" + name + '\'' +
+                "name='" + super.getName() + '\'' +
                 ", uStructuralVariation=" + uStructuralVariation +
                 '}';
     }
