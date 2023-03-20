@@ -11,10 +11,12 @@ public class Property {
 
     private final String name;
     private final Type type;
+    private final boolean mandatory;
 
-    public Property(String name, String type) {
+    public Property(String name, String type, boolean mandatory) {
         this.name = name;
         this.type = getType(type);
+        this.mandatory = mandatory;
     }
 
     private static Type getType(String type){
@@ -23,6 +25,10 @@ public class Property {
 
     public String getName() {
         return name;
+    }
+
+    public boolean isMandatory() {
+        return mandatory;
     }
 
     public Type getType() {

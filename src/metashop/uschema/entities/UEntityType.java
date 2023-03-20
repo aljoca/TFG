@@ -19,7 +19,7 @@ public abstract class UEntityType {
         this.uStructuralVariation = new UStructuralVariation();
         StructuralVariation structuralVariation = entityType.getStructuralVariation();
         if (Objects.nonNull(structuralVariation)){
-            this.uStructuralVariation.generateUAttributes(structuralVariation.getProperties());
+            this.uStructuralVariation.generateFeatures(this.name, structuralVariation.getProperties());
         }
     }
 

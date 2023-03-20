@@ -1,11 +1,20 @@
 package metashop;
 
 import metashop.graphdatamodel.GraphSchemaModel;
+import metashop.graphdatamodel.Label;
+import metashop.graphdatamodel.type.PrimitiveType;
 import metashop.uschema.USchemaModel;
+import metashop.uschema.entities.UEntityType;
+import metashop.uschema.features.UAttribute;
+import metashop.uschema.features.UFeature;
+import metashop.uschema.types.UPrimitiveType;
+import metashop.uschema.types.UType;
+import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public abstract class MetaShopSchema implements AutoCloseable{
@@ -71,6 +80,48 @@ public abstract class MetaShopSchema implements AutoCloseable{
         }
     }
 
+    private static ArrayList<Record> getDataNodes(String condition){
+        try (Session session = driver.session()) {
+            return session.executeWrite(tx -> {
+                Query query = new Query("MATCH (n) WHERE (" + condition + ") WITH labels(n) AS Etiquetas, [prop in keys(n) | {name: prop, value: n[prop]}] AS Atributos  RETURN Etiquetas, Atributos");
+                Result result = tx.run(query);
+                return new ArrayList<>(result.list());
+            });
+        }
+    }
+
+//    private static ArrayList<Record> getDataRelationships(){
+//        try (Session session = driver.session()) {
+//            return session.executeWrite(tx -> {
+//                Query query = new Query("""
+//
+//                        """);
+//                Result result = tx.run(query);
+//                return new ArrayList<>(result.list());
+//            });
+//        }
+//    }
+
+    private static void migrateData(GraphSchemaModel graphSchemaModel, USchemaModel uSchemaModel){
+
+        for (String entityName: uSchemaModel.getuEntities().keySet()) {
+            StringBuilder condition = new StringBuilder();
+            ArrayList<Label> labels = graphSchemaModel.getEntities().get(entityName).getLabels();
+            ArrayList<Record> dataNodes;
+            if (labels.size() > 1) {
+                for (Label label: labels) {
+                    condition.append("n:").append(label.getName()).append(" AND ");
+                }
+                String finalCondition = StringUtils.substring(condition.toString(), 0, condition.length() - 4);
+                dataNodes = getDataNodes(finalCondition);
+            }
+            else {
+                dataNodes = getDataNodes("n:" + labels.get(0).getName() + " AND size(labels(n)) < 2");
+            }
+        }
+    }
+
+
     @Override
     public void close(){
         driver.close();
@@ -83,6 +134,13 @@ public abstract class MetaShopSchema implements AutoCloseable{
 
         USchemaModel uSchemaModel = new USchemaModel(graphSchema);
         System.out.println(uSchemaModel);
+
+        // Creo el esquema en MySQL
+        MySqlSchemaGenerator.createMySQLSchemaFromUSchema(uSchemaModel);
+
+        // Aquí tendría que hacer las consultas necesarias para mapear los datos
+        migrateData(graphSchema,uSchemaModel);
+
     }
 
 }

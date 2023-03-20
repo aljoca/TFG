@@ -3,7 +3,9 @@ package metashop.uschema;
 import metashop.graphdatamodel.Property;
 import metashop.uschema.features.UAttribute;
 import metashop.uschema.features.UFeature;
+import metashop.uschema.features.UKey;
 
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -22,11 +24,58 @@ public class UStructuralVariation {
     public void addFeature(UFeature uFeature){
         features.put(uFeature.getName(), uFeature);
     }
-    public void generateUAttributes(ArrayList<Property> properties){
+
+    /**
+     * Método para generar features.
+     *
+     * @param properties
+     */
+    public void generateFeatures(String name, ArrayList<Property> properties){
+        /* TODO Debo preguntar una cosa: ¿los atributos de una relación irían en una tabla aparte?
+            Por ejemplo, tengo la relación IN_ORDER, que relaciona un producto con un pedido. Esta relación
+            tiene los atributos quantity y subprice. La relación representaría un "ItemPedido".
+            Mi idea es que si una relación tiene propiedades debería crear una tabla intermedia que contenga el idOrigen,
+            idDestino y los atributos de las relaciones.
+         */
+        /*
+            TODO Campos que considero compuestos: PaymentMethod, Discount
+         */
+        ArrayList<UAttribute> keys = new ArrayList<>();
         properties.forEach(property -> {
-            features.put(property.getName(), new UAttribute(property));
+            UAttribute uFeature = new UAttribute(property);
+            if (property.getName().startsWith("__")){
+                keys.add(uFeature);
+            }
+            features.put(property.getName(), uFeature);
+            if (!keys.isEmpty()){
+                String keyName = "KEY_" + name;
+                features.put(keyName, new UKey(keyName, keys));
+            }
         });
     }
+
+    public HashMap<String, UFeature> getFeatures() {
+        return features;
+    }
+
+    public HashMap<String, UAttribute> getAttributes(){
+        HashMap<String, UAttribute> attributes = new HashMap<>();
+        for (UFeature uFeature: this.features.values()) {
+            if (uFeature instanceof UAttribute){
+                attributes.put(uFeature.getName(), (UAttribute) uFeature);
+            }
+        }
+        return attributes;
+    }
+    public UKey getKey(){
+        for (UFeature uFeature: this.features.values()) {
+            if (uFeature instanceof UKey){
+               return (UKey) uFeature;
+            }
+        }
+        return null;
+    }
+
 
     @Override
     public String toString() {

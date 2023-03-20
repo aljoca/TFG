@@ -13,7 +13,7 @@ public class UAttribute extends UStructuralFeature {
     private final UType type;
 
     public UAttribute(Property property) {
-        super(property.getName());
+        super(property.getName(), property.isMandatory());
         this.type = generateUType(property.getType());
     }
 
@@ -25,5 +25,9 @@ public class UAttribute extends UStructuralFeature {
             UPrimitiveType uPrimitiveType = new UPrimitiveType(((Array)type).getPrimitiveType().getName());
             return new UList(uPrimitiveType);
         }
+    }
+
+    public UType getType() {
+        return type;
     }
 }

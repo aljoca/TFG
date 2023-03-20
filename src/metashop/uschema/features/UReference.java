@@ -13,7 +13,7 @@ public class UReference extends ULogicalFeature {
     private int upperBoundCardinality;
 
     public UReference(String referenceName, UEntityType destination, UStructuralVariation uStructuralVariation, int upperBoundCardinality) {
-        super(referenceName);
+        super(referenceName, true);
         this.uEntityTypeDestination = destination;
         this.uStructuralVariation = uStructuralVariation;
         this.lowerBoundCardinality = 1;

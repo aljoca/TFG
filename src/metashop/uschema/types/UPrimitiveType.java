@@ -8,4 +8,8 @@ public class UPrimitiveType extends UType{
         this.name = name;
 
     }
+
+    public String getName() {
+        return name;
+    }
 }

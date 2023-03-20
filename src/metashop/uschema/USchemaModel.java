@@ -74,6 +74,14 @@ public class USchemaModel {
         }
     }
 
+    public HashMap<String, UEntityType> getuEntities() {
+        return uEntities;
+    }
+
+    public HashMap<String, URelationshipType> getuRelationships() {
+        return uRelationships;
+    }
+
     @Override
     public String toString() {
         return "USchemaModel{" +

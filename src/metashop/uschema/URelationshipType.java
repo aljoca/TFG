@@ -17,7 +17,7 @@ public class URelationshipType {
         this.uStructuralVariation = new UStructuralVariation();
         StructuralVariation structuralVariation = relationshipType.getStructuralVariation();
         if (Objects.nonNull(structuralVariation)){
-            this.uStructuralVariation.generateUAttributes(structuralVariation.getProperties());
+            this.uStructuralVariation.generateFeatures(this.name, structuralVariation.getProperties());
         }
     }
 
