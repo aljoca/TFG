@@ -20,7 +20,6 @@ public class UStructuralVariation {
     public UStructuralVariation(USchemaType container) {
         this.container = container;
         this.features = new HashMap<>();
-        // Necesito que las referencias no se añadan de nuevo a la structuralVariation
         this.id = U_STRUCTURAL_VARIATION_IDENTIFIER++;
     }
 
@@ -34,22 +33,17 @@ public class UStructuralVariation {
      * @param properties
      */
     public void generateFeatures(String name, ArrayList<Property> properties){
-        /* TODO Debo preguntar una cosa: ¿los atributos de una relación irían en una tabla aparte?
-            Por ejemplo, tengo la relación IN_ORDER, que relaciona un producto con un pedido. Esta relación
-            tiene los atributos quantity y subprice. La relación representaría un "ItemPedido".
-            Mi idea es que si una relación tiene propiedades debería crear una tabla intermedia que contenga el idOrigen,
-            idDestino y los atributos de las relaciones.
-         */
-        /*
-            TODO Campos que considero compuestos: PaymentMethod, Discount
-         */
+        // Para cada propiedad, creo un atributo nuevo
         ArrayList<UAttribute> keys = new ArrayList<>();
         properties.forEach(property -> {
             UAttribute uFeature = new UAttribute(property);
+            // Si el nombre del atributo empieza por "__" lo añado a la lista de atributos de una key, que finalmente será parte de una PK y una FK.
+            // Esto lo hago porque las PK y FK pueden ser compuestas.
             if (property.getName().startsWith("__")){
                 keys.add(uFeature);
             }
             features.put(property.getName(), uFeature);
+            // Si la lista  de atributos de la key no está vacía, creo la Key con el nombre "KEY_" + nombre de la tabla de la que es key.
             if (!keys.isEmpty()){
                 String keyName = "KEY_" + name;
                 features.put(keyName, new UKey(keyName, keys));
@@ -61,6 +55,11 @@ public class UStructuralVariation {
         return features;
     }
 
+    /**
+     * Método para obtener los atributos de una structural variation.
+     * @see UAttribute
+     * @return HashMap con los atributos de la structural variation
+     */
     public HashMap<String, UAttribute> getAttributes(){
         HashMap<String, UAttribute> attributes = new HashMap<>();
         for (UFeature uFeature: this.features.values()) {
@@ -71,6 +70,11 @@ public class UStructuralVariation {
         return attributes;
     }
 
+    /**
+     * Método para encontrar la key de una structural variation.
+     * @see UKey
+     * @return Key de la structural variation
+     */
     public UKey getKey(){
         for (UFeature uFeature: this.features.values()) {
             if (uFeature instanceof UKey){
@@ -80,6 +84,11 @@ public class UStructuralVariation {
         return null;
     }
 
+    /**
+     * Método para encontrar las referencias de una structural variation
+     * @see UReference
+     * @return Referencias de la structural variation
+     */
     public ArrayList<UReference> getReferences(){
         ArrayList<UReference> references = new ArrayList<>();
         for (UFeature uFeature: this.features.values()){

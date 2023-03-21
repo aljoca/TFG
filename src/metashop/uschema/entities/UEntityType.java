@@ -23,10 +23,6 @@ public abstract class UEntityType extends USchemaType{
         }
     }
 
-    public boolean isRoot() {
-        return root;
-    }
-
     public String getName() {
         return super.getName();
     }

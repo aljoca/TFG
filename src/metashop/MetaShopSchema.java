@@ -80,6 +80,38 @@ public abstract class MetaShopSchema implements AutoCloseable{
         }
     }
 
+    private static ArrayList<Record> getIncomingRelationships(){
+        try (Session session = driver.session()) {
+            return session.executeWrite(tx -> {
+                Query query = new Query("""
+                        // Relaciones entrantes de un NODO
+                        MATCH ()-[r]->(n)
+                        WITH n, type(r) AS rel_type, count(r) AS count
+                        return DISTINCT rel_type, max(count)          
+                        """);
+                Result result = tx.run(query);
+                return new ArrayList<>(result.list());
+            });
+        }
+    }
+
+    private static ArrayList<Record> getOutgoingRelationships(){
+        try (Session session = driver.session()) {
+            return session.executeWrite(tx -> {
+                Query query = new Query("""
+                        // Relaciones salientes de un NODO
+                        MATCH (n)-[r]->()
+                        WITH n, type(r) AS rel_type, count(r) AS count
+                        return DISTINCT rel_type, max(count)
+                                  
+                        """);
+                Result result = tx.run(query);
+                return new ArrayList<>(result.list());
+            });
+        }
+    }
+
+
     private static ArrayList<Record> getDataNodes(String condition){
         try (Session session = driver.session()) {
             return session.executeWrite(tx -> {
@@ -90,34 +122,23 @@ public abstract class MetaShopSchema implements AutoCloseable{
         }
     }
 
-//    private static ArrayList<Record> getDataRelationships(){
-//        try (Session session = driver.session()) {
-//            return session.executeWrite(tx -> {
-//                Query query = new Query("""
+
+//    private static void migrateData(GraphSchemaModel graphSchemaModel, USchemaModel uSchemaModel){
 //
-//                        """);
-//                Result result = tx.run(query);
-//                return new ArrayList<>(result.list());
-//            });
+//        for (String entityName: uSchemaModel.getuEntities().keySet()) {
+//            StringBuilder condition = new StringBuilder();
+//            ArrayList<Label> labels = graphSchemaModel.getEntities().get(entityName).getLabels();
+//            ArrayList<Record> dataNodes;
+//            if (labels.size() > 1) {
+//                labels.forEach(label -> condition.append("n:").append(label.getName()).append(" AND "));
+//                String finalCondition = StringUtils.substring(condition.toString(), 0, condition.length() - 4);
+//                dataNodes = getDataNodes(finalCondition);
+//            }
+//            else {
+//                dataNodes = getDataNodes("n:" + labels.get(0).getName() + " AND size(labels(n)) < 2");
+//            }
 //        }
 //    }
-
-    private static void migrateData(GraphSchemaModel graphSchemaModel, USchemaModel uSchemaModel){
-
-        for (String entityName: uSchemaModel.getuEntities().keySet()) {
-            StringBuilder condition = new StringBuilder();
-            ArrayList<Label> labels = graphSchemaModel.getEntities().get(entityName).getLabels();
-            ArrayList<Record> dataNodes;
-            if (labels.size() > 1) {
-                labels.forEach(label -> condition.append("n:").append(label.getName()).append(" AND "));
-                String finalCondition = StringUtils.substring(condition.toString(), 0, condition.length() - 4);
-                dataNodes = getDataNodes(finalCondition);
-            }
-            else {
-                dataNodes = getDataNodes("n:" + labels.get(0).getName() + " AND size(labels(n)) < 2");
-            }
-        }
-    }
 
 
     @Override
@@ -134,10 +155,10 @@ public abstract class MetaShopSchema implements AutoCloseable{
         System.out.println(uSchemaModel);
 
         // Creo el esquema en MySQL
-        MySqlSchemaGenerator.createMySQLSchemaFromUSchema(uSchemaModel);
+        MySqlSchemaGenerator.createMySQLSchemaFromUSchema(getIncomingRelationships(), getOutgoingRelationships(), uSchemaModel);
 
         // Aquí tendría que hacer las consultas necesarias para mapear los datos
-        migrateData(graphSchema,uSchemaModel);
+//        migrateData(graphSchema,uSchemaModel);
 
     }
 

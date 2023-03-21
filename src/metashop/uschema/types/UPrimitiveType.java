@@ -12,4 +12,11 @@ public class UPrimitiveType extends UType{
     public String getName() {
         return name;
     }
+
+    @Override
+    public String toString() {
+        return "UPrimitiveType{" +
+                "name='" + name + '\'' +
+                '}';
+    }
 }

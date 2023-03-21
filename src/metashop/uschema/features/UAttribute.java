@@ -30,4 +30,11 @@ public class UAttribute extends UStructuralFeature {
     public UType getType() {
         return type;
     }
+
+    @Override
+    public String toString() {
+        return "UAttribute{" +
+                "type=" + type +
+                '}';
+    }
 }
