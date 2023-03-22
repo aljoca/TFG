@@ -2,6 +2,7 @@ package metashop;
 
 import metashop.uschema.URelationshipType;
 import metashop.uschema.USchemaModel;
+import metashop.uschema.UStructuralVariation;
 import metashop.uschema.entities.UEntityType;
 import metashop.uschema.features.UAttribute;
 import metashop.uschema.features.UKey;
@@ -35,7 +36,7 @@ public class MySqlSchemaGenerator {
                     }
                     case "N:M" -> {
                         String tableName = uEntity.getName() + "_" + StringUtils.lowerCase(uReference.getName()) + "_" + uReference.getUEntityTypeDestination().getName();
-                        createRelationshipTable(tableName, uEntity, uReference.getUEntityTypeDestination());
+                        createRelationshipTable(tableName, uEntity, uReference.getUEntityTypeDestination(), uReference.getUStructuralVariationFeaturedBy());
                     }
                 }
             }
@@ -75,7 +76,7 @@ public class MySqlSchemaGenerator {
         System.out.println(addForeignKey + fkReference + ") REFERENCES " + StringUtils.substring(foreignKey.getName(), 4) + "(" + referencesTo + ");");
     }
 
-    private static void createRelationshipTable(String tableName, UEntityType originEntity, UEntityType destinationEntity){
+    private static void createRelationshipTable(String tableName, UEntityType originEntity, UEntityType destinationEntity, UStructuralVariation relationshipStructuralVariation){
         UKey originKey = originEntity.getUStructuralVariation().getKey();
         UKey destinationKey = destinationEntity.getUStructuralVariation().getKey();
         String createTable = "CREATE TABLE " + tableName + "(" ;
@@ -106,6 +107,11 @@ public class MySqlSchemaGenerator {
                 + originEntity.getName() + "(" + StringUtils.substring(originPKWithoutType.toString(), 0, originPKWithoutType.length()-1) + ");");
         System.out.println("ALTER TABLE " + tableName + " ADD FOREIGN KEY(" + StringUtils.substring(destinationFK.toString(), 0, destinationFK.length()-1) + ") REFERENCES "
                 + destinationEntity.getName() + "(" + StringUtils.substring(destinationPKWithoutRef.toString(), 0, destinationPKWithoutRef.length()-1) + ");");
+
+        for (UAttribute uAttribute: relationshipStructuralVariation.getAttributes().values()) {
+            System.out.println("ALTER TABLE " + tableName + " ADD COLUMN " + uAttribute.getName() + " "
+                    + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()) + " " + transformMandatoryToMySQL(uAttribute.isMandatory()) + ";");
+        }
     }
 
     public static HashMap<String, String> calculateRelationshipCardinality(HashMap<String, URelationshipType> relationshipTypes, ArrayList<Record> incomingRelationships, ArrayList<Record> outgoingRelationships){
