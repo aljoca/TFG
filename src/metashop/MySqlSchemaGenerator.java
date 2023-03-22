@@ -83,7 +83,6 @@ public class MySqlSchemaGenerator {
         StringBuilder originPK = new StringBuilder();
         StringBuilder originPKWithoutType = new StringBuilder();
 
-
         for (UAttribute uAttribute: originKey.getUAttributes()) {
             originPK.append(uAttribute.getName()).append(" ").append(transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType())).append(",");
             originPKWithoutType.append(uAttribute.getName()).append(",");
@@ -91,51 +90,22 @@ public class MySqlSchemaGenerator {
 
         StringBuilder destinationPK = new StringBuilder();
         StringBuilder destinationPKWithoutType = new StringBuilder();
+        StringBuilder destinationPKWithoutRef = new StringBuilder();
         StringBuilder destinationFK = new StringBuilder();
 
-
         for (UAttribute uAttribute: destinationKey.getUAttributes()) {
-            destinationPK.append(uAttribute.getName()).append(" ").append(transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType())).append(",");
-            destinationPKWithoutType.append(uAttribute.getName()).append(",");
-            destinationFK.append(uAttribute.getName()).append("Ref").append(",");
+            destinationPKWithoutRef.append(uAttribute.getName()).append(",");
+            destinationPK.append(uAttribute.getName()).append("Ref ").append(transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType())).append(",");
+            destinationPKWithoutType.append(uAttribute.getName()).append("Ref,");
+            destinationFK.append(uAttribute.getName()).append("Ref,");
         }
 
-        System.out.println(originPK);
-        System.out.println(originPKWithoutType);
-        System.out.println(destinationPK);
-        System.out.println(destinationPKWithoutType);
-        System.out.println(destinationFK);
-
-
-
-
-
-
-
-
-
-
-
-
-//        String originPkWithoutType = "";
-//        String originPk = "";
-//        String originFk = "";
-//        String destinationPkWithoutType = "";
-//        String destinationPk = "";
-//        String destinationFk = "";
-//        for (UAttribute attribute: originKey.getUAttributes()) {
-//            originPkWithoutType += attribute.getName() + ",";
-//            originPk+= attribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) attribute.getType()) + ",";
-//            originFk += attribute.getName() + ",";
-//        }
-//
-//        for (UAttribute attribute: destinationKey.getUAttributes()) {
-//            destinationPkWithoutType += attribute.getName() + ",";
-//            destinationPk+= attribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) attribute.getType()) + ",";
-//        }
-//
-//        originPkWithoutType = StringUtils.substring(originPkWithoutType, 0,originPkWithoutType.length()-1);
-//        System.out.println(createTable + originPk + " " + destinationPk + " PRIMARY KEY (" + originPkWithoutType + ", " + StringUtils.substring(destinationPkWithoutType, 0, destinationPkWithoutType.length()-1) + "));");
+        System.out.println(createTable + originPK + StringUtils.substring(destinationPK.toString(), 0, destinationPK.length()-1)
+                + ", PRIMARY KEY(" + originPKWithoutType + StringUtils.substring(destinationPKWithoutType.toString(), 0, destinationPKWithoutType.length()-1) + "));");
+        System.out.println("ALTER TABLE " + tableName + " ADD FOREIGN KEY(" + StringUtils.substring(originPKWithoutType.toString(), 0, originPKWithoutType.length()-1) + ") REFERENCES "
+                + originEntity.getName() + "(" + StringUtils.substring(originPKWithoutType.toString(), 0, originPKWithoutType.length()-1) + ");");
+        System.out.println("ALTER TABLE " + tableName + " ADD FOREIGN KEY(" + StringUtils.substring(destinationFK.toString(), 0, destinationFK.length()-1) + ") REFERENCES "
+                + destinationEntity.getName() + "(" + StringUtils.substring(destinationPKWithoutRef.toString(), 0, destinationPKWithoutRef.length()-1) + ");");
     }
 
     public static HashMap<String, String> calculateRelationshipCardinality(HashMap<String, URelationshipType> relationshipTypes, ArrayList<Record> incomingRelationships, ArrayList<Record> outgoingRelationships){
