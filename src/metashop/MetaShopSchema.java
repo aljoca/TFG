@@ -12,6 +12,7 @@ import metashop.uschema.types.UType;
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
+import org.neo4j.driver.types.Node;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -140,6 +141,32 @@ public abstract class MetaShopSchema implements AutoCloseable{
 //        }
 //    }
 
+    public static ArrayList<Record> getDataEntity(String label){
+        try (Session session = driver.session()) {
+            return session.executeWrite(tx -> {
+                Query query = new Query("MATCH (u:" + label + ") return u");
+                Result result = tx.run(query);
+                return new ArrayList<>(result.list());
+            });
+        }
+    }
+
+    public static ArrayList<Record> getDataRelationships(String relationshipName){
+        try (Session session = driver.session()) {
+            return session.executeWrite(tx -> {
+                Query query = new Query("MATCH (n)-[r:" + relationshipName + "]->(m) return n, m, r");
+                Result result = tx.run(query);
+                return new ArrayList<>(result.list());
+            });
+        }
+    }
+
+    public static String appendLabels(Node node){
+        StringBuilder labels = new StringBuilder();
+        node.labels().forEach(labels::append);
+        return labels.toString();
+    }
+
 
     @Override
     public void close(){
@@ -157,9 +184,12 @@ public abstract class MetaShopSchema implements AutoCloseable{
         // Creo el esquema en MySQL
         MySqlSchemaGenerator.createMySQLSchemaFromUSchema(getIncomingRelationships(), getOutgoingRelationships(), uSchemaModel);
 
-        // Aquí tendría que hacer las consultas necesarias para mapear los datos
-//        migrateData(graphSchema,uSchemaModel);
 
+        // La mejor forma de migrar datos creo que sería
+        // 1º Crear la tabla
+        // 2º Hacer los alter table necesarios
+        // 3º Realizar consulta para obtener los datos de esa tabla
+        // 4º Insertar los datos en esa tabla
     }
 
 }

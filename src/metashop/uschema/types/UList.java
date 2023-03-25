@@ -2,13 +2,13 @@ package metashop.uschema.types;
 
 public class UList extends UType{
 
-    private UType uType;
+    private final UType uType;
 
     public UList(UType uType) {
         this.uType = uType;
     }
 
-    public UType getuType() {
+    public UType getUType() {
         return uType;
     }
 }
