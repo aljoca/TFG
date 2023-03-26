@@ -14,6 +14,9 @@ import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.types.Node;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +27,8 @@ public abstract class MetaShopSchema implements AutoCloseable{
     private final static String user = "neo4j";
     private final static String password = "12345678";
     public final static List<String> types = List.of("Double", "Long", "Boolean", "String");
+    public static Connection con;
+
 
 
     /**
@@ -180,9 +185,16 @@ public abstract class MetaShopSchema implements AutoCloseable{
 
         USchemaModel uSchemaModel = new USchemaModel(graphSchema);
         System.out.println(uSchemaModel);
+        try {
+            con= DriverManager.getConnection("jdbc:mysql://localhost:3306/migracion1","root","12345678");
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            MySqlSchemaGenerator.createMySQLSchemaFromUSchema(getIncomingRelationships(), getOutgoingRelationships(), uSchemaModel);
+            con.close();
+        } catch (ClassNotFoundException | SQLException e) {
+            throw new RuntimeException(e);
+        }
 
         // Creo el esquema en MySQL
-        MySqlSchemaGenerator.createMySQLSchemaFromUSchema(getIncomingRelationships(), getOutgoingRelationships(), uSchemaModel);
 
 
         // La mejor forma de migrar datos creo que sería
