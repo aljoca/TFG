@@ -12,8 +12,6 @@ import metashop.uschema.types.UPrimitiveType;
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.Record;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -22,11 +20,19 @@ import java.util.List;
 
 public class MySqlSchemaGenerator {
 
-    private static boolean migrateData = true;
     public static HashMap<String, List<String>> tablePrimaryKeys = new HashMap<>();
 
-    public static void createMySQLSchemaFromUSchema(ArrayList<Record> incomingRelationships, ArrayList<Record> outgoingRelationships, USchemaModel uSchemaModel){
+
+    /**
+     * Método para migrar el esquema y los datos de USchema a MySQL.
+     * @param incomingRelationships ArrayList de relaciones entrantes a un nodo con su máxima cardinalidad.
+     * @param outgoingRelationships ArrayList de relaciones salientes de un nodo con su máxima cardinalidad.
+     * @param uSchemaModel Modelo USchema con el que realizar la migración.
+     */
+    public static void migrateSchemaAndDataNeo4jToMySql(ArrayList<Record> incomingRelationships, ArrayList<Record> outgoingRelationships, USchemaModel uSchemaModel, boolean migrateData){
+        // Calculo la cardinalidad de las relaciones.
         HashMap<String, String> relationshipCardinality = calculateRelationshipCardinality(uSchemaModel.getuRelationships(), incomingRelationships, outgoingRelationships);
+        // Por cada tipo de entidad creo una tabla.
         for (UEntityType uEntity: uSchemaModel.getUEntities().values()) {
             createEntityTable(uEntity);
             if (migrateData){
@@ -35,22 +41,32 @@ public class MySqlSchemaGenerator {
         }
         // Recorro otra vez la lista de entidades porque ya sé que están todas las tablas necesarias creadas
         for (UEntityType uEntity: uSchemaModel.getUEntities().values()) {
+            // Obtengo las referencias de la entidad que estamos recorriendo.
             ArrayList<UReference> references = uEntity.getUStructuralVariation().getReferences();
             for (UReference uReference: references) {
+                // Para cada referencia, consultamos su cardinalidad. Dependiendo de dicho dato, sabremos si tenemos que crear una tabla intermedia
+                // o simplemente añadir una referencia en la tabla correspondiente.
                 switch (relationshipCardinality.get(uReference.getName())) {
                     case "1:1" -> {
+                        // Si la cardinalidad es 1:1 quiere decir que debemos añadir una foreignKey en la tabla correspondiente a la entidad origen.
+                        // p.e. User - RECOMMENDED_BY -> User | Un usuario sólo puede ser recomendado por otro usuario
                         addForeignKeyToTable(uEntity.getName(), uReference.getUEntityTypeDestination().getUStructuralVariation().getKey(), StringUtils.lowerCase(uReference.getName()));
                         if (migrateData){
                             MySqlDataMigrator.migrarDatosRelaciones1To1(uEntity.getName(), MetaShopSchema.getDataRelationships(uReference.getName()), "_" + StringUtils.lowerCase(uReference.getName()));
                         }
                     }
                     case "1:N" -> {
+                        // Si la cardinalidad es 1:N quiere decir que debemos añadir una foreignKey en la tabla correspondiente a la entidad origen.
+                        // p.e. User - ORDERS -> Order | Un usuario puede realizar 1 o más pedidos que solo van a pertenecer a él.
                         addForeignKeyToTable(uReference.getUEntityTypeDestination().getName(), uEntity.getUStructuralVariation().getKey(), "_" + StringUtils.lowerCase(uReference.getName()));
                         if (migrateData){
                             MySqlDataMigrator.migrarDatosRelaciones1ToN(uReference.getUEntityTypeDestination().getName(), MetaShopSchema.getDataRelationships(uReference.getName()));
                         }
                     }
                     case "N:M" -> {
+                        // Si la cardinalidad es N:M quiere decir que debemos crear una tabla intermedia para no repetir la información de las tablas implicadas en la relación.
+                        // p.e. Product - IN_ORDER -> Order | Un producto puede estar incluído en un pedido o en muchos pedidos. Un pedido puede tener muchos productos.
+                        // p.e. Product - CATEGORIZED -> ProductCategory | Un producto puede pertenecer a una categoría o a muchas categorías. Una categoría puede tener muchos productos.
                         String tableName = uEntity.getName() + "_" + StringUtils.lowerCase(uReference.getName()) + "_" + uReference.getUEntityTypeDestination().getName();
                         createRelationshipTable(tableName, uEntity, uReference.getUEntityTypeDestination(), uReference.getUStructuralVariationFeaturedBy(), "_" + StringUtils.lowerCase(uReference.getName()));
                         if (migrateData){
@@ -158,6 +174,13 @@ public class MySqlSchemaGenerator {
         printCreateTable(tableName+uAttribute.getName(), primaryKeyWithType + "," + tablePartialPrimaryKey, (primaryKey + "," + "position," + uAttribute.getName()));
     }
 
+    /**
+     * Método genérico para añadir una foreign key a una tabla con sus respectivas referencias
+     * @param tableName
+     * @param primaryKeysWithoutType
+     * @param referenceTableName
+     * @param primaryKeyWithoutRef
+     */
     private static void printAlterTableForeignKey(String tableName, String primaryKeysWithoutType, String referenceTableName, String primaryKeyWithoutRef){
         try {
             Statement stmt=MetaShopSchema.con.createStatement();
@@ -168,6 +191,13 @@ public class MySqlSchemaGenerator {
         }
     }
 
+    /**
+     * Método genérico para insertar un atributo a una tabla.
+     * @param tableName
+     * @param attributeName
+     * @param attributeType
+     * @param attributeMandatory
+     */
     private static void printAlterTableAddColumn(String tableName, String attributeName, String attributeType, String attributeMandatory){
         try {
             Statement stmt=MetaShopSchema.con.createStatement();
@@ -192,20 +222,24 @@ public class MySqlSchemaGenerator {
         HashMap<String, String> relationshipsCardinality = new HashMap<>();
         HashMap<String, Integer> incoming = new HashMap<>();
         HashMap<String, Integer> outgoing = new HashMap<>();
+        // Obtengo la cardinalidad de las relaciones entrantes, es decir, el número máximo de relaciones que del mismo tipo de relación que llegan a un nodo.
         incomingRelationships.forEach(incomingRelationship -> incoming.put(incomingRelationship.values().get(0).asString(), incomingRelationship.values().get(1).asInt()));
+        // Obtengo la cardinalidad de las relaciones salientes, es decir, el número máximo de relaciones que del mismo tipo de relación que salen de un nodo.
         outgoingRelationships.forEach(outgoingRelationship -> outgoing.put(outgoingRelationship.values().get(0).asString(), outgoingRelationship.values().get(1).asInt()));
+        // Para cada una de las relaciones compruebo su cardinalidad saliente y entrante.
         outgoing.keySet().forEach(relationship -> {
             int out = outgoing.get(relationship);
             int in = incoming.get(relationship);
             if (out == 1 && in == 1){
                 relationshipsCardinality.put(relationship, "1:1");
             }
-            // Para un tipo de relación, si se cumple que del nodo origen solo sale una relación de ese tipo y para el nodo destino llegan varias relaciones de ese tipo, o viceversa
+            // Para un tipo de relación, si se cumple que del nodo origen solo sale una relación de ese tipo (out == 1) y para el nodo destino llegan varias relaciones de ese tipo (in > 1), o viceversa
             // y además se cumple que la relación no tiene atributos, la cardinalidad es 1:N
             else if (((out == 1 && in > 1) || (out > 1 && in == 1)) && relationshipTypes.get(relationship).getuStructuralVariation().getAttributes().isEmpty()){
                 relationshipsCardinality.put(relationship, "1:N");
             }
             else {
+                // Si no se cumple ninguno de los casos anteriores, inferimos que la cardinalidad es de muchos a muchos.
                 relationshipsCardinality.put(relationship, "N:M");
             }
         });

@@ -180,28 +180,22 @@ public abstract class MetaShopSchema implements AutoCloseable{
 
     public static void main(String... args) {
         driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
+        // Obtenemos un esquema general de Neo4J para poder trabajar con USchema.
         GraphSchemaModel graphSchema = new GraphSchemaModel("MetaShop", getNodes(), getRelationships(), getRelationshipsCardinality());
         System.out.println(graphSchema);
 
+        // Obtenemos el USchema resultante del esquema general que hemos obtenido estudiando la estructura de los datos en Neo4J
         USchemaModel uSchemaModel = new USchemaModel(graphSchema);
         System.out.println(uSchemaModel);
         try {
             con= DriverManager.getConnection("jdbc:mysql://localhost:3306/migracion1","root","12345678");
             Class.forName("com.mysql.cj.jdbc.Driver");
-            MySqlSchemaGenerator.createMySQLSchemaFromUSchema(getIncomingRelationships(), getOutgoingRelationships(), uSchemaModel);
+            // Migramos USchema al esquema relacional MySQL, así como sus datos si el flag "migrateData" está a true
+            MySqlSchemaGenerator.migrateSchemaAndDataNeo4jToMySql(getIncomingRelationships(), getOutgoingRelationships(), uSchemaModel, true);
             con.close();
         } catch (ClassNotFoundException | SQLException e) {
             throw new RuntimeException(e);
         }
-
-        // Creo el esquema en MySQL
-
-
-        // La mejor forma de migrar datos creo que sería
-        // 1º Crear la tabla
-        // 2º Hacer los alter table necesarios
-        // 3º Realizar consulta para obtener los datos de esa tabla
-        // 4º Insertar los datos en esa tabla
     }
 
 }
