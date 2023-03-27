@@ -58,9 +58,9 @@ public class MySqlSchemaGenerator {
                     case "1:N" -> {
                         // Si la cardinalidad es 1:N quiere decir que debemos añadir una foreignKey en la tabla correspondiente a la entidad origen.
                         // p.e. User - ORDERS -> Order | Un usuario puede realizar 1 o más pedidos que solo van a pertenecer a él.
-                        addForeignKeyToTable(uReference.getUEntityTypeDestination().getName(), uEntity.getUStructuralVariation().getKey(), "_" + StringUtils.lowerCase(uReference.getName()));
+                        addForeignKeyToTable(uReference.getUEntityTypeDestination().getName(), uEntity.getUStructuralVariation().getKey(),  StringUtils.lowerCase(uReference.getName()));
                         if (migrateData){
-                            MySqlDataMigrator.migrarDatosRelaciones1ToN(uReference.getUEntityTypeDestination().getName(), MetaShopSchema.getDataRelationships(uReference.getName()));
+                            MySqlDataMigrator.migrarDatosRelaciones1ToN(uReference.getUEntityTypeDestination().getName(), MetaShopSchema.getDataRelationships(uReference.getName()), "_" + StringUtils.lowerCase(uReference.getName()));
                         }
                     }
                     case "N:M" -> {
@@ -123,8 +123,8 @@ public class MySqlSchemaGenerator {
         String referencesTo = "";
 
         for (UAttribute uAttribute: foreignKey.getUAttributes()) {
-            printAlterTableAddColumn(table, uAttribute.getName() + "Ref", transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()), transformMandatoryToMySQL(uAttribute.isMandatory()));
-            fkReference += uAttribute.getName() + "Ref, ";
+            printAlterTableAddColumn(table, uAttribute.getName() + "_" + relationshipName, transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()), transformMandatoryToMySQL(uAttribute.isMandatory()));
+            fkReference += uAttribute.getName() + "_" + relationshipName + ", ";
             referencesTo += uAttribute.getName() + ", ";
         }
         fkReference = StringUtils.substring(fkReference, 0,fkReference.length()-2);

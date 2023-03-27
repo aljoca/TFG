@@ -57,7 +57,7 @@ public class MySqlDataMigrator {
 
     }
 
-    public static void migrarDatosRelaciones1ToN(String tableName, ArrayList<Record> relaciones){
+    public static void migrarDatosRelaciones1ToN(String tableName, ArrayList<Record> relaciones, String relationshipName){
         try {
             Statement stmt=MetaShopSchema.con.createStatement();
             for (Record relacion: relaciones) {
@@ -69,7 +69,7 @@ public class MySqlDataMigrator {
                 StringBuilder destinationPrimaryKeysColumns = new StringBuilder();
                 // Recorro la lista de primaryKeys para cada relación
                 for (String primaryKey: originPrimaryKeys) {
-                    originPrimaryKeysColumns.append(primaryKey).append("Ref").append(" = ").append(originNode.get(primaryKey)).append(" , ");
+                    originPrimaryKeysColumns.append(primaryKey).append(relationshipName).append(" = ").append(originNode.get(primaryKey)).append(" , ");
                 }
                 for (String primaryKey: destionationPrimaryKeys) {
                     destinationPrimaryKeysColumns.append(primaryKey).append(" = ").append(destinationNode.get(primaryKey)).append(" AND ");
