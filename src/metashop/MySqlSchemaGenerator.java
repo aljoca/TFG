@@ -80,27 +80,36 @@ public class MySqlSchemaGenerator {
         }
     }
 
+    /**
+     *
+     * @param uEntity
+     */
     private static void createEntityTable(UEntityType uEntity){
         try {
             Statement stmt=MetaShopSchema.con.createStatement();
-            ArrayList<String> properties = new ArrayList<>();
-            HashMap<String, UAttribute> attributes = uEntity.getUStructuralVariation().getAttributes();
 
             // Genero la primaryKey (solo los nombres de la columna) que voy a añadir a la tabla.
             MySqlSchemaGenerator.generatePrimayKey(uEntity.getName(), uEntity.getUStructuralVariation().getKey());
-            StringBuilder printPrimaryKey = new StringBuilder();
-            StringBuilder printAttributes = new StringBuilder(",");
-            StringBuilder printPrimaryKeyWithoutType = new StringBuilder();
-            StringBuilder printAttributesWithoutType = new StringBuilder(",");
+            // Lista para guardar las primaryKeys con sus respectivos tipos.
+            ArrayList<String> printPrimaryKeyList = new ArrayList<>();
+            // Lista para guardar los atributos con sus respectivos tipos.
+            ArrayList<String> printAttributesList = new ArrayList<>();
+            // Lista para guardar las primaryKeys sin sus respectivos tipos.
+            ArrayList<String> printPrimaryKeyWithoutTypeList = new ArrayList<>();
+
+            // Recorro la lista de keys de la entidad, ya que puede ser una key compuesta.
             for (UAttribute uAttribute: uEntity.getUStructuralVariation().getKey().getUAttributes()) {
                 // TODO Ver qué pasaría cuando los atributos no son de tipo primitivo
-                printPrimaryKeyWithoutType.append(uAttribute.getName()).append(",");
-                printPrimaryKey.append(uAttribute.getName()).append(" ").append(transformAtributeTypeToMySQL((UPrimitiveType)uAttribute.getType())).append(transformMandatoryToMySQL(uAttribute.isMandatory())).append(",");
+                printPrimaryKeyList.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType)uAttribute.getType()) + transformMandatoryToMySQL(uAttribute.isMandatory()));
+                printPrimaryKeyWithoutTypeList.add(uAttribute.getName());
             }
-            for (UAttribute uAttribute: attributes.values()) {
+
+            // Recorro la lista de atributos de la entidad.
+            for (UAttribute uAttribute: uEntity.getUStructuralVariation().getAttributes().values()) {
                 if (uAttribute.getType() instanceof UPrimitiveType){
+                    // Si es de tipo primitivo, compruebo si empieza por "__" (significaría que es una key). Si no es una key, la añado a la lista de atributos
                     if (!uAttribute.getName().startsWith("__")) {
-                        printAttributes.append(uAttribute.getName()).append(" ").append(transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType())).append(transformMandatoryToMySQL(uAttribute.isMandatory())).append(",");
+                        printAttributesList.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()) + transformMandatoryToMySQL(uAttribute.isMandatory()));
                     }
                 }
                 else {
@@ -108,17 +117,20 @@ public class MySqlSchemaGenerator {
                     //createCollectionAttributeTable(uEntity.getName(), pk, uAttribute);
                 }
             }
-            printPrimaryKey.deleteCharAt(printPrimaryKey.length()-1);
-            printPrimaryKeyWithoutType.deleteCharAt(printPrimaryKeyWithoutType.length()-1).append(")");
-            System.out.println("CREATE TABLE " + uEntity.getName() + "(" + printPrimaryKey + printAttributes + "PRIMARY KEY(" + printPrimaryKeyWithoutType + ");");
-            stmt.execute("CREATE TABLE " + uEntity.getName() + "(" + printPrimaryKey + printAttributes + "PRIMARY KEY(" + printPrimaryKeyWithoutType + ");");
+            String printAttributes = printAttributesList.isEmpty() ? "" : ", " + String.join(",", printAttributesList);
+            System.out.println("CREATE TABLE " + uEntity.getName() + "(" + String.join(",",printPrimaryKeyList) + printAttributes + ", PRIMARY KEY(" + String.join(",", printPrimaryKeyWithoutTypeList) + "));");
+            stmt.execute("CREATE TABLE " + uEntity.getName() + "(" + String.join(",",printPrimaryKeyList)  + printAttributes + ", PRIMARY KEY(" + String.join(",", printPrimaryKeyWithoutTypeList) + "));");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     *
+     * @param entityName
+     * @param key
+     */
     private static void generatePrimayKey(String entityName, UKey key) {
-        StringBuilder primaryKey = new StringBuilder();
         // Añado una entrada en el HashMap de la entidad para guardar los nombres de sus primaryKeys
         tablePrimaryKeys.put(entityName, new ArrayList<>());
         key.getUAttributes().forEach(uAttribute -> {
@@ -126,81 +138,129 @@ public class MySqlSchemaGenerator {
         });
     }
 
-    private static void addForeignKeyToTable(String table, UKey foreignKey, String relationshipName){
-        String fkReference = "";
-        String referencesTo = "";
+    /**
+     *
+     * @param table
+     * @param foreignK
+     * @param relationshipName
+     */
+    private static void addForeignKeyToTable(String table, UKey foreignK, String relationshipName){
+        ArrayList<String> foreignKeyAttributes = new ArrayList<>();
+        ArrayList<String> reference = new ArrayList<>();
 
-        for (UAttribute uAttribute: foreignKey.getUAttributes()) {
-            printAlterTableAddColumn(table, uAttribute.getName() + "_" + relationshipName, transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()), transformMandatoryToMySQL(uAttribute.isMandatory()));
-            fkReference += uAttribute.getName() + "_" + relationshipName + ", ";
-            referencesTo += uAttribute.getName() + ", ";
+        for (UAttribute uAttribute: foreignK.getUAttributes()) {
+            // TODO Tendría que ver qué pasa si el tipo del atributo no es PrimitiveType
+            // Creo la variable para que quede más legible.
+            String attributeName = uAttribute.getName() + "_" + relationshipName;
+            // Creo una columna con el nombre del atributo seguido de "_" y el nombre de la relación.
+            printAlterTableAddColumn(table, attributeName , transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()), transformMandatoryToMySQL(uAttribute.isMandatory()));
+
+            // Añado el nombre del atributo con la nueva nomenclatura como foreignKey, y el nombre original del atributo como referencia.
+            foreignKeyAttributes.add(attributeName);
+            reference.add(uAttribute.getName());
         }
-        fkReference = StringUtils.substring(fkReference, 0,fkReference.length()-2);
-        referencesTo = StringUtils.substring(referencesTo, 0,referencesTo.length()-2);
-        printAlterTableForeignKey(table, fkReference, StringUtils.substring(foreignKey.getName(), 4), referencesTo);
+        // Creo las variables para que quede más legible.
+        String foreignKey = String.join(",", foreignKeyAttributes);
+        String referenceTableName = StringUtils.substring(foreignK.getName(), 4);
+        String primaryKeyReference = String.join(",", reference);
+
+        // Añado la foreignKey a la tabla correspondiente.
+        printAlterTableForeignKey(table, foreignKey, referenceTableName , primaryKeyReference);
     }
 
+    /**
+     *
+     * @param tableName
+     * @param originEntity
+     * @param destinationEntity
+     * @param relationshipStructuralVariation
+     * @param relationshipName
+     */
     private static void createRelationshipTable(String tableName, UEntityType originEntity, UEntityType destinationEntity, UStructuralVariation relationshipStructuralVariation, String relationshipName){
-        StringBuilder originPK = new StringBuilder();
-        StringBuilder originPKWithoutType = new StringBuilder();
-        StringBuilder originPkWithoutRef = new StringBuilder();
-
+        ArrayList<String> originAttributes = new ArrayList<>();
+        ArrayList<String> originAttributesWithoutType = new ArrayList<>();
         MySqlSchemaGenerator.tableRelationshipAttributes.put(relationshipName, new ArrayList<>());
+
         for (UAttribute uAttribute: relationshipStructuralVariation.getAttributes().values()) {
             MySqlSchemaGenerator.tableRelationshipAttributes.get(relationshipName).add(uAttribute.getName());
         }
 
         for (UAttribute uAttribute: originEntity.getUStructuralVariation().getKey().getUAttributes()) {
             // TODO Ver qué pasaría si una primayKey no es de tipo primitivo
-            originPK.append(uAttribute.getName()).append(" ").append(transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType())).append(",");
-            originPkWithoutRef.append(uAttribute.getName()).append(",");
-            originPKWithoutType.append(uAttribute.getName()).append(",");
+            originAttributes.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()));
+            originAttributesWithoutType.add(uAttribute.getName());
         }
 
-        StringBuilder destinationPK = new StringBuilder();
-        StringBuilder destinationPKWithoutType = new StringBuilder();
-        StringBuilder destinationPKWithoutRef = new StringBuilder();
-        StringBuilder destinationFK = new StringBuilder();
+        ArrayList<String> destinationAttributes = new ArrayList<>();
+        ArrayList<String> destinationAttributesWithoutType = new ArrayList<>();
+        ArrayList<String> destinationPKReferences = new ArrayList<>();
 
         for (UAttribute uAttribute: destinationEntity.getUStructuralVariation().getKey().getUAttributes()) {
-            destinationPKWithoutRef.append(uAttribute.getName()).append(",");
+            destinationPKReferences.add(uAttribute.getName());
             // TODO Ver qué pasaría si una primayKey no es de tipo primitivo
-            destinationPK.append(uAttribute.getName()).append(relationshipName).append(" ").append(transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType())).append(",");
-            destinationPKWithoutType.append(uAttribute.getName()).append(relationshipName).append(",");
-            destinationFK.append(uAttribute.getName()).append(relationshipName).append(",");
+            destinationAttributes.add(uAttribute.getName() + relationshipName + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()));
+            destinationAttributesWithoutType.add(uAttribute.getName() + relationshipName);
         }
+        // Creo las variables para que sea más legible
+        String originPk = String.join(",", originAttributesWithoutType);
+        String destinationFk = String.join(",", destinationAttributesWithoutType);
+        String primaryKey = originPk + "," + destinationFk;
+        String attributes = String.join(",", originAttributes) + "," + String.join(",", destinationAttributes);
 
-        printCreateTable(tableName, originPK + StringUtils.chop(destinationPK.toString()), originPKWithoutType + StringUtils.chop(destinationPKWithoutType.toString()));
-        printAlterTableForeignKey(tableName, StringUtils.chop(originPKWithoutType.toString()), originEntity.getName(), StringUtils.chop(originPkWithoutRef.toString()));
-        printAlterTableForeignKey(tableName, StringUtils.chop(destinationFK.toString()), destinationEntity.getName(), StringUtils.chop(destinationPKWithoutRef.toString()));
-
+        printCreateTable(tableName, attributes, primaryKey);
+        printAlterTableForeignKey(tableName, originPk, originEntity.getName(), originPk);
+        printAlterTableForeignKey(tableName, destinationFk, destinationEntity.getName(), String.join(",", String.join(",", destinationPKReferences)));
         for (UAttribute uAttribute: relationshipStructuralVariation.getAttributes().values()) {
             if (uAttribute.getType() instanceof UPrimitiveType) {
                 printAlterTableAddColumn(tableName, uAttribute.getName(), transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()), transformMandatoryToMySQL(uAttribute.isMandatory()));
             }
             else {
-                createCollectionAttributeTable(tableName, (originPK + StringUtils.chop(destinationPK.toString())), (originPKWithoutType + StringUtils.chop(destinationPKWithoutType.toString())), uAttribute);
+                createCollectionAttributeTable(tableName, (originAttributes + String.join(",", destinationAttributes)), (originAttributesWithoutType + destinationFk), uAttribute);
             }
         }
     }
 
+    /**
+     *
+     * @param tableName
+     * @param attributes
+     * @param primaryKey
+     */
+    private static void printCreateTable(String tableName, String attributes, String primaryKey){
+        try {
+            Statement stmt=MetaShopSchema.con.createStatement();
+            System.out.println("CREATE TABLE " + tableName + "(" + attributes + ", PRIMARY KEY(" + primaryKey + "));");
+            stmt.execute("CREATE TABLE " + tableName + "(" + attributes + ", PRIMARY KEY(" + primaryKey + "));");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     *
+     * @param tableName
+     * @param primaryKeyWithType
+     * @param primaryKey
+     * @param uAttribute
+     */
     private static void createCollectionAttributeTable(String tableName, String primaryKeyWithType, String primaryKey, UAttribute uAttribute){
         String tablePartialPrimaryKey = "position INT(50)," + uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) ((UList) uAttribute.getType()).getUType());
         printCreateTable(tableName+uAttribute.getName(), primaryKeyWithType + "," + tablePartialPrimaryKey, (primaryKey + "," + "position," + uAttribute.getName()));
     }
 
+
     /**
      * Método genérico para añadir una foreign key a una tabla con sus respectivas referencias
      * @param tableName
-     * @param primaryKeysWithoutType
+     * @param foreignKey
      * @param referenceTableName
-     * @param primaryKeyWithoutRef
+     * @param primaryKeyReference
      */
-    private static void printAlterTableForeignKey(String tableName, String primaryKeysWithoutType, String referenceTableName, String primaryKeyWithoutRef){
+    private static void printAlterTableForeignKey(String tableName, String foreignKey, String referenceTableName, String primaryKeyReference){
         try {
             Statement stmt=MetaShopSchema.con.createStatement();
-            System.out.println("ALTER TABLE " + tableName + " ADD FOREIGN KEY(" + primaryKeysWithoutType + ") REFERENCES " + referenceTableName + "(" + primaryKeyWithoutRef + ");");
-            stmt.execute("ALTER TABLE " + tableName + " ADD FOREIGN KEY(" + primaryKeysWithoutType + ") REFERENCES " + referenceTableName + "(" + primaryKeyWithoutRef + ");");
+            System.out.println("ALTER TABLE " + tableName + " ADD FOREIGN KEY(" + foreignKey + ") REFERENCES " + referenceTableName + "(" + primaryKeyReference + ");");
+            stmt.execute("ALTER TABLE " + tableName + " ADD FOREIGN KEY(" + foreignKey + ") REFERENCES " + referenceTableName + "(" + primaryKeyReference + ");");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -223,28 +283,24 @@ public class MySqlSchemaGenerator {
         }
     }
 
-    private static void printCreateTable(String tableName, String attributes, String primaryKey){
-        try {
-            Statement stmt=MetaShopSchema.con.createStatement();
-            System.out.println("CREATE TABLE " + tableName + "(" + attributes + ", PRIMARY KEY(" + primaryKey + "));");
-            stmt.execute("CREATE TABLE " + tableName + "(" + attributes + ", PRIMARY KEY(" + primaryKey + "));");
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
+    /**
+     *
+     * @param relationshipTypes
+     * @param incomingRelationships
+     * @param outgoingRelationships
+     * @return
+     */
     public static HashMap<String, String> calculateRelationshipCardinality(HashMap<String, URelationshipType> relationshipTypes, ArrayList<Record> incomingRelationships, ArrayList<Record> outgoingRelationships){
         HashMap<String, String> relationshipsCardinality = new HashMap<>();
-        HashMap<String, Integer> incoming = new HashMap<>();
-        HashMap<String, Integer> outgoing = new HashMap<>();
         // Obtengo la cardinalidad de las relaciones entrantes, es decir, el número máximo de relaciones que del mismo tipo de relación que llegan a un nodo.
-        incomingRelationships.forEach(incomingRelationship -> incoming.put(incomingRelationship.values().get(0).asString(), incomingRelationship.values().get(1).asInt()));
+        HashMap<String, Integer> incomingRel = getRelationshipCardinality(incomingRelationships);
         // Obtengo la cardinalidad de las relaciones salientes, es decir, el número máximo de relaciones que del mismo tipo de relación que salen de un nodo.
-        outgoingRelationships.forEach(outgoingRelationship -> outgoing.put(outgoingRelationship.values().get(0).asString(), outgoingRelationship.values().get(1).asInt()));
+        HashMap<String, Integer> outgoingRel = getRelationshipCardinality(outgoingRelationships);
+
         // Para cada una de las relaciones compruebo su cardinalidad saliente y entrante.
-        outgoing.keySet().forEach(relationship -> {
-            int out = outgoing.get(relationship);
-            int in = incoming.get(relationship);
+        outgoingRel.keySet().forEach(relationship -> {
+            int out = outgoingRel.get(relationship);
+            int in = incomingRel.get(relationship);
             if (out == 1 && in == 1){
                 relationshipsCardinality.put(relationship, "1:1");
             }
@@ -261,10 +317,31 @@ public class MySqlSchemaGenerator {
         return  relationshipsCardinality;
     }
 
+    /**
+     *
+     * @param relationshipsCardinality
+     * @return
+     */
+    private static HashMap<String, Integer> getRelationshipCardinality(ArrayList<Record> relationshipsCardinality){
+        HashMap<String, Integer> relationshipCardinality = new HashMap<>();
+        relationshipsCardinality.forEach(incomingRelationship -> relationshipCardinality.put(incomingRelationship.values().get(0).asString(), incomingRelationship.values().get(1).asInt()));
+        return relationshipCardinality;
+    }
+
+    /**
+     *
+     * @param mandatory
+     * @return
+     */
     public static String transformMandatoryToMySQL(boolean mandatory){
         return (mandatory ? "NOT NULL" : "");
     }
 
+    /**
+     *
+     * @param type
+     * @return
+     */
     public static String transformAtributeTypeToMySQL(UPrimitiveType type){
         // TODO Estoy hay que revisarlo, evidentemente
         return switch (type.getName()) {
