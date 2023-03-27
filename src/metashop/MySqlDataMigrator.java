@@ -105,9 +105,15 @@ public class MySqlDataMigrator {
                     destinationPrimaryKeysColumns.append(destinationNode.get(primaryKey)).append(",");
                     destinationPrimaryKeysColumnsWithoutValue.append(primaryKey).append(relationshipName).append(",");
                 }
-                String originValue = originPrimaryKeysColumns.toString();
-                String destinationValue = StringUtils.substring(destinationPrimaryKeysColumns.toString(), 0, destinationPrimaryKeysColumns.length()-1);
-                stmt.execute("INSERT INTO " + tableName + "(" + originPrimaryKeysColumnsWithoutValue + StringUtils.chop(destinationPrimaryKeysColumnsWithoutValue.toString()) + ") VALUES (" + originValue + destinationValue + ");");
+                StringBuilder relationshipAttributes = new StringBuilder(",");
+                StringBuilder relationshipAttributesValues = new StringBuilder(",");
+                for (String relationshipAttribute: MySqlSchemaGenerator.tableRelationshipAttributes.get(relationshipName)) {
+                    relationshipAttributes.append(relationshipAttribute).append(",");
+                    relationshipAttributesValues.append(relacion.values().get(2).get(relationshipAttribute)).append(",");
+                }
+                stmt.execute("INSERT INTO " + tableName + "(" + originPrimaryKeysColumnsWithoutValue +
+                        StringUtils.chop(destinationPrimaryKeysColumnsWithoutValue.toString()) + StringUtils.chop(relationshipAttributes.toString()) + ") VALUES (" + originPrimaryKeysColumns
+                        + StringUtils.chop(destinationPrimaryKeysColumns.toString()) + StringUtils.chop(relationshipAttributesValues.toString()) + ");");
 
             }
 
