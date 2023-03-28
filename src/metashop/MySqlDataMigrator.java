@@ -104,37 +104,52 @@ public class MySqlDataMigrator {
                 Node destinationNode =  relacion.values().get(1).asNode();
                 ArrayList<String> originPrimaryKeys = (ArrayList<String>) MySqlSchemaGenerator.tablePrimaryKeys.get(MetaShopSchema.appendLabels(originNode));
                 ArrayList<String> destionationPrimaryKeys = (ArrayList<String>) MySqlSchemaGenerator.tablePrimaryKeys.get(MetaShopSchema.appendLabels(destinationNode));
-                StringBuilder originPrimaryKeysColumns = new StringBuilder();
-                StringBuilder destinationPrimaryKeysColumns = new StringBuilder();
-                StringBuilder originPrimaryKeysColumnsWithoutValue = new StringBuilder();
-                StringBuilder destinationPrimaryKeysColumnsWithoutValue = new StringBuilder();
+
+                ArrayList<String> originPrimaryKeysColumns = new ArrayList<>();
+                ArrayList<String> destinationPrimaryKeysColumns = new ArrayList<>();
+                ArrayList<String> originPrimaryKeysColumnsWithoutValue = new ArrayList<>();
+                ArrayList<String> destinationPrimaryKeysColumnsWithoutValue = new ArrayList<>();
+
                 // Recorro la lista de primaryKeys para cada relación
                 for (String primaryKey: originPrimaryKeys) {
-                    originPrimaryKeysColumns.append(originNode.get(primaryKey)).append(" , ");
-                    originPrimaryKeysColumnsWithoutValue.append(primaryKey).append(",");
+                    originPrimaryKeysColumns.add(originNode.get(primaryKey).toString());
+                    originPrimaryKeysColumnsWithoutValue.add(primaryKey);
                 }
                 for (String primaryKey: destionationPrimaryKeys) {
-                    destinationPrimaryKeysColumns.append(destinationNode.get(primaryKey)).append(",");
-                    destinationPrimaryKeysColumnsWithoutValue.append(primaryKey).append(relationshipName).append(",");
+                    destinationPrimaryKeysColumns.add(destinationNode.get(primaryKey).toString());
+                    destinationPrimaryKeysColumnsWithoutValue.add(primaryKey + relationshipName);
                 }
-                StringBuilder relationshipAttributes = new StringBuilder(",");
-                StringBuilder relationshipAttributesValues = new StringBuilder(",");
+                ArrayList<String> relationshipAttributes = new ArrayList<>();
+                ArrayList<String> relationshipAttributesValues = new ArrayList<>();
                 for (String relationshipAttribute: MySqlSchemaGenerator.tableRelationshipAttributes.get(relationshipName)) {
+                    relationshipAttributes.add(relationshipAttribute);
                     Value attributeValue = relacion.values().get(2).get(relationshipAttribute);
                     if (attributeValue instanceof ListValue){
-                        relationshipAttributesValues.append(createJsonAttributeValue((ListValue) attributeValue, relationshipAttribute));
+                        relationshipAttributesValues.add(createJsonAttributeValue((ListValue) attributeValue, relationshipAttribute));
                     }
-                    else relationshipAttributesValues.append(attributeValue).append(",");
+                    else relationshipAttributesValues.add(attributeValue.toString());
                 }
-                stmt.execute("INSERT INTO " + tableName + "(" + originPrimaryKeysColumnsWithoutValue +
-                        StringUtils.chop(destinationPrimaryKeysColumnsWithoutValue.toString()) + StringUtils.chop(relationshipAttributes.toString()) + ") VALUES (" + originPrimaryKeysColumns
-                        + StringUtils.chop(destinationPrimaryKeysColumns.toString()) + StringUtils.chop(relationshipAttributesValues.toString()) + ");");
-
+                System.out.println(getInsertSentence(tableName, originPrimaryKeysColumnsWithoutValue, destinationPrimaryKeysColumnsWithoutValue,
+                        relationshipAttributes, originPrimaryKeysColumns, destinationPrimaryKeysColumns, relationshipAttributesValues));
+                stmt.execute(getInsertSentence(tableName, originPrimaryKeysColumnsWithoutValue, destinationPrimaryKeysColumnsWithoutValue,
+                        relationshipAttributes, originPrimaryKeysColumns, destinationPrimaryKeysColumns, relationshipAttributesValues));
             }
-
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static String getInsertSentence(String tableName, ArrayList<String> originPrimaryKeysColumnsWithoutValue, ArrayList<String> destinationPrimaryKeysColumnsWithoutValue,
+                                            ArrayList<String> relationshipAttributes, ArrayList<String> originPrimaryKeysColumns, ArrayList<String> destinationPrimaryKeysColumns,
+                                            ArrayList<String> relationshipAttributesValues){
+        if (relationshipAttributes.isEmpty())
+            return "INSERT INTO " + tableName + "(" + String.join(",", originPrimaryKeysColumnsWithoutValue) + "," +
+                    String.join(",", destinationPrimaryKeysColumnsWithoutValue) + ") VALUES (" + String.join(",",originPrimaryKeysColumns)
+                    + "," + String.join(",", destinationPrimaryKeysColumns) + ");";
+        else return "INSERT INTO " + tableName + "(" + String.join(",", originPrimaryKeysColumnsWithoutValue) + "," +
+                String.join(",", destinationPrimaryKeysColumnsWithoutValue) + "," +  String.join(",", relationshipAttributes) + ") VALUES (" + String.join(",",originPrimaryKeysColumns)
+                + "," + String.join(",", destinationPrimaryKeysColumns) + "," +String.join(",", relationshipAttributesValues) + ");";
+
     }
 
 }
