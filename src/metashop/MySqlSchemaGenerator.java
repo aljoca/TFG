@@ -30,7 +30,7 @@ public class MySqlSchemaGenerator {
      * @param outgoingRelationships ArrayList de relaciones salientes de un nodo con su máxima cardinalidad.
      * @param uSchemaModel Modelo USchema con el que realizar la migración.
      */
-    public static void migrateSchemaAndDataNeo4jToMySql(ArrayList<Record> incomingRelationships, ArrayList<Record> outgoingRelationships, USchemaModel uSchemaModel, boolean migrateData){
+    public static void migrateSchemaAndDataFromNeo4jToMySql(ArrayList<Record> incomingRelationships, ArrayList<Record> outgoingRelationships, USchemaModel uSchemaModel, boolean migrateData){
         // Calculo la cardinalidad de las relaciones.
         HashMap<String, String> relationshipCardinality = calculateRelationshipCardinality(uSchemaModel.getuRelationships(), incomingRelationships, outgoingRelationships);
         // Por cada tipo de entidad creo una tabla.
@@ -99,7 +99,9 @@ public class MySqlSchemaGenerator {
 
             // Recorro la lista de keys de la entidad, ya que puede ser una key compuesta.
             for (UAttribute uAttribute: uEntity.getUStructuralVariation().getKey().getUAttributes()) {
-                // TODO Ver qué pasaría cuando los atributos no son de tipo primitivo
+                /* TODO Ver qué pasaría cuando los atributos no son de tipo primitivo.
+                    Según he visto, en MySQL un JSON no puede ser una clave, por lo que no debería tener en cuenta esto
+                */
                 printPrimaryKeyList.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType)uAttribute.getType()) + transformMandatoryToMySQL(uAttribute.isMandatory()));
                 printPrimaryKeyWithoutTypeList.add(uAttribute.getName());
             }
@@ -115,6 +117,7 @@ public class MySqlSchemaGenerator {
                 else {
                     // AQUÍ DEBERÍA CONTROLAR SI ESTOY MIGRANDO UNA COLECCIÓN
                     //createCollectionAttributeTable(uEntity.getName(), pk, uAttribute);
+                    printAttributesList.add(uAttribute.getName() + " JSON" + transformMandatoryToMySQL(uAttribute.isMandatory()));
                 }
             }
             String printAttributes = printAttributesList.isEmpty() ? "" : ", " + String.join(",", printAttributesList);
@@ -149,7 +152,9 @@ public class MySqlSchemaGenerator {
         ArrayList<String> reference = new ArrayList<>();
 
         for (UAttribute uAttribute: foreignK.getUAttributes()) {
-            // TODO Tendría que ver qué pasa si el tipo del atributo no es PrimitiveType
+            /* TODO Tendría que ver qué pasa si el tipo del atributo no es PrimitiveType.
+                Según he visto, en MySQL un JSON no puede ser una clave, por lo que no debería tener en cuenta esto.
+             */
             // Creo la variable para que quede más legible.
             String attributeName = uAttribute.getName() + "_" + relationshipName;
             // Creo una columna con el nombre del atributo seguido de "_" y el nombre de la relación.
@@ -186,8 +191,9 @@ public class MySqlSchemaGenerator {
         }
 
         for (UAttribute uAttribute: originEntity.getUStructuralVariation().getKey().getUAttributes()) {
-            // TODO Ver qué pasaría si una primayKey no es de tipo primitivo
-            originAttributes.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()));
+            /* TODO Tendría que ver qué pasa si el tipo del atributo no es PrimitiveType.
+                Según he visto, en MySQL un JSON no puede ser una clave, por lo que no debería tener en cuenta esto.
+             */            originAttributes.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()));
             originAttributesWithoutType.add(uAttribute.getName());
         }
 
@@ -197,8 +203,9 @@ public class MySqlSchemaGenerator {
 
         for (UAttribute uAttribute: destinationEntity.getUStructuralVariation().getKey().getUAttributes()) {
             destinationPKReferences.add(uAttribute.getName());
-            // TODO Ver qué pasaría si una primayKey no es de tipo primitivo
-            destinationAttributes.add(uAttribute.getName() + relationshipName + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()));
+            /* TODO Tendría que ver qué pasa si el tipo del atributo no es PrimitiveType.
+                Según he visto, en MySQL un JSON no puede ser una clave, por lo que no debería tener en cuenta esto.
+             */            destinationAttributes.add(uAttribute.getName() + relationshipName + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()));
             destinationAttributesWithoutType.add(uAttribute.getName() + relationshipName);
         }
         // Creo las variables para que sea más legible
@@ -207,15 +214,18 @@ public class MySqlSchemaGenerator {
         String primaryKey = originPk + "," + destinationFk;
         String attributes = String.join(",", originAttributes) + "," + String.join(",", destinationAttributes);
 
+        // Primero creo la tabla intermedia para la entidad origen y destino.
         printCreateTable(tableName, attributes, primaryKey);
+        // Añado las foreignKey de la entidad origen
         printAlterTableForeignKey(tableName, originPk, originEntity.getName(), originPk);
+        // Añado las foreignKey de la entidad destino
         printAlterTableForeignKey(tableName, destinationFk, destinationEntity.getName(), String.join(",", String.join(",", destinationPKReferences)));
         for (UAttribute uAttribute: relationshipStructuralVariation.getAttributes().values()) {
             if (uAttribute.getType() instanceof UPrimitiveType) {
                 printAlterTableAddColumn(tableName, uAttribute.getName(), transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()), transformMandatoryToMySQL(uAttribute.isMandatory()));
             }
             else {
-                createCollectionAttributeTable(tableName, (originAttributes + String.join(",", destinationAttributes)), (originAttributesWithoutType + destinationFk), uAttribute);
+                printAlterTableAddColumn(tableName, uAttribute.getName(), "JSON", transformMandatoryToMySQL(uAttribute.isMandatory()));
             }
         }
     }
@@ -235,19 +245,6 @@ public class MySqlSchemaGenerator {
             throw new RuntimeException(e);
         }
     }
-
-    /**
-     *
-     * @param tableName
-     * @param primaryKeyWithType
-     * @param primaryKey
-     * @param uAttribute
-     */
-    private static void createCollectionAttributeTable(String tableName, String primaryKeyWithType, String primaryKey, UAttribute uAttribute){
-        String tablePartialPrimaryKey = "position INT(50)," + uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) ((UList) uAttribute.getType()).getUType());
-        printCreateTable(tableName+uAttribute.getName(), primaryKeyWithType + "," + tablePartialPrimaryKey, (primaryKey + "," + "position," + uAttribute.getName()));
-    }
-
 
     /**
      * Método genérico para añadir una foreign key a una tabla con sus respectivas referencias
@@ -301,7 +298,7 @@ public class MySqlSchemaGenerator {
         outgoingRel.keySet().forEach(relationship -> {
             int out = outgoingRel.get(relationship);
             int in = incomingRel.get(relationship);
-            if (out == 1 && in == 1){
+            if ((out == 1 && in == 1) && relationshipTypes.get(relationship).getuStructuralVariation().getAttributes().isEmpty()){
                 relationshipsCardinality.put(relationship, "1:1");
             }
             // Para un tipo de relación, si se cumple que del nodo origen solo sale una relación de ese tipo (out == 1) y para el nodo destino llegan varias relaciones de ese tipo (in > 1), o viceversa

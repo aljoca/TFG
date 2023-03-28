@@ -2,7 +2,7 @@ package metashop.graphdatamodel.type;
 
 public class Array extends Type{
 
-    private PrimitiveType primitiveType;
+    private final PrimitiveType primitiveType;
 
     public Array(String array) {
         this.primitiveType = new PrimitiveType(array);

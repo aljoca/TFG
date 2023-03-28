@@ -191,7 +191,7 @@ public abstract class MetaShopSchema implements AutoCloseable{
             con= DriverManager.getConnection("jdbc:mysql://localhost:3306/migracion1","root","12345678");
             Class.forName("com.mysql.cj.jdbc.Driver");
             // Migramos USchema al esquema relacional MySQL, así como sus datos si el flag "migrateData" está a true
-            MySqlSchemaGenerator.migrateSchemaAndDataNeo4jToMySql(getIncomingRelationships(), getOutgoingRelationships(), uSchemaModel, true);
+            MySqlSchemaGenerator.migrateSchemaAndDataFromNeo4jToMySql(getIncomingRelationships(), getOutgoingRelationships(), uSchemaModel, true);
             con.close();
         } catch (ClassNotFoundException | SQLException e) {
             throw new RuntimeException(e);
