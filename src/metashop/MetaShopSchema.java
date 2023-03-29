@@ -1,15 +1,7 @@
 package metashop;
 
 import metashop.graphdatamodel.GraphSchemaModel;
-import metashop.graphdatamodel.Label;
-import metashop.graphdatamodel.type.PrimitiveType;
 import metashop.uschema.USchemaModel;
-import metashop.uschema.entities.UEntityType;
-import metashop.uschema.features.UAttribute;
-import metashop.uschema.features.UFeature;
-import metashop.uschema.types.UPrimitiveType;
-import metashop.uschema.types.UType;
-import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.types.Node;
@@ -18,7 +10,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public abstract class MetaShopSchema implements AutoCloseable{
@@ -117,35 +108,6 @@ public abstract class MetaShopSchema implements AutoCloseable{
         }
     }
 
-
-    private static ArrayList<Record> getDataNodes(String condition){
-        try (Session session = driver.session()) {
-            return session.executeWrite(tx -> {
-                Query query = new Query("MATCH (n) WHERE (" + condition + ") WITH labels(n) AS Etiquetas, [prop in keys(n) | {name: prop, value: n[prop]}] AS Atributos  RETURN Etiquetas, Atributos");
-                Result result = tx.run(query);
-                return new ArrayList<>(result.list());
-            });
-        }
-    }
-
-
-//    private static void migrateData(GraphSchemaModel graphSchemaModel, USchemaModel uSchemaModel){
-//
-//        for (String entityName: uSchemaModel.getuEntities().keySet()) {
-//            StringBuilder condition = new StringBuilder();
-//            ArrayList<Label> labels = graphSchemaModel.getEntities().get(entityName).getLabels();
-//            ArrayList<Record> dataNodes;
-//            if (labels.size() > 1) {
-//                labels.forEach(label -> condition.append("n:").append(label.getName()).append(" AND "));
-//                String finalCondition = StringUtils.substring(condition.toString(), 0, condition.length() - 4);
-//                dataNodes = getDataNodes(finalCondition);
-//            }
-//            else {
-//                dataNodes = getDataNodes("n:" + labels.get(0).getName() + " AND size(labels(n)) < 2");
-//            }
-//        }
-//    }
-
     public static ArrayList<Record> getDataEntity(String label){
         try (Session session = driver.session()) {
             return session.executeWrite(tx -> {
@@ -191,7 +153,7 @@ public abstract class MetaShopSchema implements AutoCloseable{
             con= DriverManager.getConnection("jdbc:mysql://localhost:3306/migracion1","root","12345678");
             Class.forName("com.mysql.cj.jdbc.Driver");
             // Migramos USchema al esquema relacional MySQL, así como sus datos si el flag "migrateData" está a true
-            MySqlSchemaGenerator.migrateSchemaAndDataFromNeo4jToMySql(getIncomingRelationships(), getOutgoingRelationships(), uSchemaModel, true);
+            MySqlDatabaseGenerator.migrateSchemaAndDataFromNeo4jToMySql(getIncomingRelationships(), getOutgoingRelationships(), uSchemaModel, true);
             con.close();
         } catch (ClassNotFoundException | SQLException e) {
             throw new RuntimeException(e);

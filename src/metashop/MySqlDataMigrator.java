@@ -1,6 +1,5 @@
 package metashop;
 
-import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalNode;
@@ -12,18 +11,27 @@ import org.neo4j.driver.types.Node;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Clase para la migración exclusiva de datos.
+ */
 public class MySqlDataMigrator {
 
-    public static void migrarDatosPrueba(String tableName, ArrayList<Record> usuarios){
+    /**
+     * Método para migrar los datos de un tipo de entidad.
+     *
+     * @param tableName Nombre de la tabla a crear.
+     * @param entities Entidades del mismo tipo que el nombre de la tabla.
+     */
+    public static void migrateEntityData(String tableName, ArrayList<Record> entities){
         try {
             Statement stmt=MetaShopSchema.con.createStatement();
-            for (Record usuario: usuarios) {
-                InternalNode user = ((InternalNode) usuario.values().get(0).asNode());
+            for (Record entity: entities) {
+                InternalNode entityNode = ((InternalNode) entity.values().get(0).asNode());
                 ArrayList<String> attributes = new ArrayList<>();
                 ArrayList<String> values = new ArrayList<>();
-                user.keys().forEach(key -> {
+                entityNode.keys().forEach(key -> {
                     attributes.add(key);
-                    Value value = user.get(key);
+                    Value value = entityNode.get(key);
                     if (value instanceof ListValue){
                         values.add(createJsonAttributeValue((ListValue) value, key));
                     }
@@ -37,6 +45,13 @@ public class MySqlDataMigrator {
 
     }
 
+    /**
+     * Método para crear un json con la información del atributo colección.
+     *
+     * @param arrayValues Lista de valores del atributo.
+     * @param attributeName Nombre del atributo.
+     * @return JSON con los valores del atributo.
+     */
     private static String createJsonAttributeValue(ListValue arrayValues, String attributeName) {
         ArrayList<String> jsonList = new ArrayList<>();
         AtomicInteger attributeCount = new AtomicInteger(1);
@@ -48,6 +63,15 @@ public class MySqlDataMigrator {
     }
 
 
+    /**
+     * Método para obtener el valor de los atributos de un nodo.
+     *
+     * @see Node
+     * @param nodeAttributes Nombres de los atributos del nodo
+     * @param relationshipName Parámetro para nombrar al atributo referencia de una tabla.
+     * @param node Nodo del que se quiere extraer los valores de los atributos.
+     * @return ArrayList de valores de atributos.
+     */
     private static ArrayList<String> getAttributeValue(ArrayList<String> nodeAttributes, String relationshipName, Node node){
         ArrayList<String> attributesValues = new ArrayList<>();
         for (String attribute: nodeAttributes) {
@@ -56,25 +80,50 @@ public class MySqlDataMigrator {
         return attributesValues;
     }
 
-
+    /**
+     * Método para obtener el valor de los atributos de un nodo.
+     *
+     * @see Node
+     * @param nodeAttributes Nombres de los atributos del nodo.
+     * @param node Nodo para el que se quiere extraer los valores de los atributos.
+     * @return ArrayList de valores de atributos
+     */
     private static ArrayList<String> getAttributeValue(ArrayList<String> nodeAttributes, Node node){
         return getAttributeValue(nodeAttributes, "", node);
     }
 
+    /**
+     * Método para insertar los valores de las referencias en una tabla entidad.
+     *
+     * @see Node
+     * @param setNode Nodo del que se obtienen los atributos con sus respectivos valores para incluirlos en la sentencia SET.
+     * @param whereNode Nodo del que se obtienen los atributos con sus respectivos valores para incluirlos en la sentencia WHERE.
+     * @param tableName Nombre de la tabla a actualizar.
+     * @param relationshipName Nombre de la relación para la que se está haciendo el update.
+     * @return Sentencia UPDATE para la inserción de los datos.
+     */
     private static String updateTable(Node setNode, Node whereNode, String tableName, String relationshipName){
-        ArrayList<String> setAttributes = getAttributeValue((ArrayList<String>) MySqlSchemaGenerator.tablePrimaryKeys.get(MetaShopSchema.appendLabels(setNode)), relationshipName, setNode);
-        ArrayList<String> whereConditions = getAttributeValue((ArrayList<String>) MySqlSchemaGenerator.tablePrimaryKeys.get(MetaShopSchema.appendLabels(whereNode)), whereNode);
+        // Obtengo los atributos a setear con sus valores y las condiciones para encontrar la entrada a actualizar.
+        ArrayList<String> setAttributes = getAttributeValue((ArrayList<String>) MySqlDatabaseGenerator.entityPrimaryKeys.get(MetaShopSchema.appendLabels(setNode)), relationshipName, setNode);
+        ArrayList<String> whereConditions = getAttributeValue((ArrayList<String>) MySqlDatabaseGenerator.entityPrimaryKeys.get(MetaShopSchema.appendLabels(whereNode)), whereNode);
         String set = String.join(",", setAttributes);
         String where = String.join(" AND ", whereConditions);
         return "UPDATE " + tableName + " SET " + set + " WHERE " + where + ";";
     }
 
-    public static void migrarDatosRelaciones1To1(String tableName, ArrayList<Record> relaciones, String relationshipName){
+    /**
+     * Método para migrar los datos de una relación 1 a 1.
+     *
+     * @param tableName
+     * @param relationships
+     * @param relationshipName
+     */
+    public static void migrateRelationshipData1To1(String tableName, ArrayList<Record> relationships, String relationshipName){
         try {
             Statement stmt=MetaShopSchema.con.createStatement();
-            for (Record relacion: relaciones) {
-                Node originNode =  relacion.values().get(0).asNode();
-                Node destinationNode =  relacion.values().get(1).asNode();
+            for (Record relationship: relationships) {
+                Node originNode =  relationship.values().get(0).asNode();
+                Node destinationNode =  relationship.values().get(1).asNode();
                 stmt.execute(updateTable(destinationNode, originNode, tableName, relationshipName));
             }
         } catch (SQLException e) {
@@ -82,12 +131,19 @@ public class MySqlDataMigrator {
         }
     }
 
-    public static void migrarDatosRelaciones1ToN(String tableName, ArrayList<Record> relaciones, String relationshipName){
+    /**
+     * Método para la migración
+     *
+     * @param tableName Nombre de la tabla a la que se van a insertar los datos.
+     * @param relationships
+     * @param relationshipName
+     */
+    public static void migreateRelationshipData1ToN(String tableName, ArrayList<Record> relationships, String relationshipName){
         try {
             Statement stmt=MetaShopSchema.con.createStatement();
-            for (Record relacion: relaciones) {
-                Node originNode =  relacion.values().get(0).asNode();
-                Node destinationNode =  relacion.values().get(1).asNode();
+            for (Record relationship: relationships) {
+                Node originNode =  relationship.values().get(0).asNode();
+                Node destinationNode =  relationship.values().get(1).asNode();
                 stmt.execute(updateTable(originNode, destinationNode, tableName, relationshipName));
             }
         } catch (SQLException e) {
@@ -95,50 +151,71 @@ public class MySqlDataMigrator {
         }
     }
 
-
-    public static void migrarDatosRelacionesNToM(String tableName, ArrayList<Record> relaciones, String relationshipName){
+    /**
+     *  Método para migrar los datos de una relación de muchos a muchos.
+     * @param tableName Nombre de la tabla a la que se van a hacer los inserts.
+     * @param relationships Relaciones que se quieren migrar. Estas relaciones son siempre de un mismo tipo.
+     * @param relationshipName Nombre de la relación que se va a migrar
+     */
+    public static void migrateRelationshipDataNToM(String tableName, ArrayList<Record> relationships, String relationshipName){
         try {
             Statement stmt=MetaShopSchema.con.createStatement();
-            for (Record relacion: relaciones) {
+            // Recorremos las relaciones. Todas las relaciones son del mismo tipo (relationshipName).
+            for (Record relacion: relationships) {
+                // Obtengo el nodo origen y destino de la relación que estamos recorriendo.
                 Node originNode =  relacion.values().get(0).asNode();
                 Node destinationNode =  relacion.values().get(1).asNode();
-                ArrayList<String> originPrimaryKeys = (ArrayList<String>) MySqlSchemaGenerator.tablePrimaryKeys.get(MetaShopSchema.appendLabels(originNode));
-                ArrayList<String> destionationPrimaryKeys = (ArrayList<String>) MySqlSchemaGenerator.tablePrimaryKeys.get(MetaShopSchema.appendLabels(destinationNode));
 
-                ArrayList<String> originPrimaryKeysColumns = new ArrayList<>();
-                ArrayList<String> destinationPrimaryKeysColumns = new ArrayList<>();
-                ArrayList<String> originPrimaryKeysColumnsWithoutValue = new ArrayList<>();
-                ArrayList<String> destinationPrimaryKeysColumnsWithoutValue = new ArrayList<>();
+                // Obtengo las primaryKeys del nodo origen y destino
+                ArrayList<String> originPrimaryKeys = (ArrayList<String>) MySqlDatabaseGenerator.entityPrimaryKeys.get(MetaShopSchema.appendLabels(originNode));
+                ArrayList<String> destionationPrimaryKeys = (ArrayList<String>) MySqlDatabaseGenerator.entityPrimaryKeys.get(MetaShopSchema.appendLabels(destinationNode));
 
-                // Recorro la lista de primaryKeys para cada relación
+                ArrayList<String> originPrimaryKeyValues = new ArrayList<>();
+                ArrayList<String> destinationPrimaryKeyValues = new ArrayList<>();
+                ArrayList<String> destinationPrimaryKeyWithoutValues = new ArrayList<>();
+
+                // Recorro la lista de primaryKeys para cada  y guardo sus valores
                 for (String primaryKey: originPrimaryKeys) {
-                    originPrimaryKeysColumns.add(originNode.get(primaryKey).toString());
-                    originPrimaryKeysColumnsWithoutValue.add(primaryKey);
+                    originPrimaryKeyValues.add(originNode.get(primaryKey).toString());
                 }
                 for (String primaryKey: destionationPrimaryKeys) {
-                    destinationPrimaryKeysColumns.add(destinationNode.get(primaryKey).toString());
-                    destinationPrimaryKeysColumnsWithoutValue.add(primaryKey + relationshipName);
+                    destinationPrimaryKeyValues.add(destinationNode.get(primaryKey).toString());
+                    destinationPrimaryKeyWithoutValues.add(primaryKey + relationshipName);
                 }
                 ArrayList<String> relationshipAttributes = new ArrayList<>();
                 ArrayList<String> relationshipAttributesValues = new ArrayList<>();
-                for (String relationshipAttribute: MySqlSchemaGenerator.tableRelationshipAttributes.get(relationshipName)) {
+
+                // Recorro la lista de atributos de la relación y guardo sus valores
+                for (String relationshipAttribute: MySqlDatabaseGenerator.relationshipAttributes.get(relationshipName)) {
                     relationshipAttributes.add(relationshipAttribute);
                     Value attributeValue = relacion.values().get(2).get(relationshipAttribute);
+                    // Si es una colección, trato el atributo como un json
                     if (attributeValue instanceof ListValue){
                         relationshipAttributesValues.add(createJsonAttributeValue((ListValue) attributeValue, relationshipAttribute));
                     }
                     else relationshipAttributesValues.add(attributeValue.toString());
                 }
-                System.out.println(getInsertSentence(tableName, originPrimaryKeysColumnsWithoutValue, destinationPrimaryKeysColumnsWithoutValue,
-                        relationshipAttributes, originPrimaryKeysColumns, destinationPrimaryKeysColumns, relationshipAttributesValues));
-                stmt.execute(getInsertSentence(tableName, originPrimaryKeysColumnsWithoutValue, destinationPrimaryKeysColumnsWithoutValue,
-                        relationshipAttributes, originPrimaryKeysColumns, destinationPrimaryKeysColumns, relationshipAttributesValues));
+                System.out.println(getInsertSentence(tableName, originPrimaryKeys, destinationPrimaryKeyWithoutValues,
+                        relationshipAttributes, originPrimaryKeyValues, destinationPrimaryKeyValues, relationshipAttributesValues));
+                stmt.execute(getInsertSentence(tableName, originPrimaryKeys, destinationPrimaryKeyWithoutValues,
+                        relationshipAttributes, originPrimaryKeyValues, destinationPrimaryKeyValues, relationshipAttributesValues));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     *
+     * @param tableName
+     * @param originPrimaryKeysColumnsWithoutValue
+     * @param destinationPrimaryKeysColumnsWithoutValue
+     * @param relationshipAttributes
+     * @param originPrimaryKeysColumns
+     * @param destinationPrimaryKeysColumns
+     * @param relationshipAttributesValues
+     * @return
+     */
     private static String getInsertSentence(String tableName, ArrayList<String> originPrimaryKeysColumnsWithoutValue, ArrayList<String> destinationPrimaryKeysColumnsWithoutValue,
                                             ArrayList<String> relationshipAttributes, ArrayList<String> originPrimaryKeysColumns, ArrayList<String> destinationPrimaryKeysColumns,
                                             ArrayList<String> relationshipAttributesValues){
