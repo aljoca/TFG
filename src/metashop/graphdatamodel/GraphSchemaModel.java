@@ -6,14 +6,23 @@ import java.util.HashMap;
 
 public class GraphSchemaModel {
 
+    private static GraphSchemaModel graphSchemaModel;
+
     private final String name;
     private final HashMap<String, EntityType> entities;
     private final ArrayList<RelationshipType> relationships;
 
-    public GraphSchemaModel (String name, ArrayList<Record> nodes, ArrayList<Record> relationships, ArrayList<Record> relationshipsCardinality) {
+    private GraphSchemaModel(String name, ArrayList<Record> nodes, ArrayList<Record> relationships, ArrayList<Record> relationshipsCardinality) {
         this.name = name;
         this.entities = addEntities(nodes);
         this.relationships = addRelationships(relationships, relationshipsCardinality);
+    }
+
+    public static GraphSchemaModel getGraphSchemaModel(String name, ArrayList<Record> nodes, ArrayList<Record> relationships, ArrayList<Record> relationshipsCardinality){
+        if (graphSchemaModel == null){
+            graphSchemaModel = new GraphSchemaModel(name, nodes, relationships, relationshipsCardinality);
+        }
+        return graphSchemaModel;
     }
 
     /**

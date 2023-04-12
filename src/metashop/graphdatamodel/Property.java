@@ -1,6 +1,6 @@
 package metashop.graphdatamodel;
 
-import metashop.MetaShopSchema;
+import metashop.GraphMigrator;
 import metashop.graphdatamodel.type.Array;
 import metashop.graphdatamodel.type.PrimitiveType;
 import metashop.graphdatamodel.type.Type;
@@ -20,7 +20,7 @@ public class Property {
     }
 
     private static Type getType(String type){
-        return (MetaShopSchema.types.contains(type)) ?  new PrimitiveType(type) : new Array(StringUtils.substringBefore(type, "Array"));
+        return (GraphMigrator.types.contains(type)) ?  new PrimitiveType(type) : new Array(StringUtils.substringBefore(type, "Array"));
     }
 
     public String getName() {

@@ -1,6 +1,5 @@
 package metashop;
 
-import metashop.uschema.URelationshipType;
 import metashop.uschema.USchemaModel;
 import metashop.uschema.UStructuralVariation;
 import metashop.uschema.entities.UEntityType;
@@ -20,7 +19,7 @@ import java.util.List;
 /**
  * Clase para la generación del esquema MySQL y la correspondiente migración de datos partiendo de USchema.
  */
-public class MySqlDatabaseGenerator {
+public class MySqlSchemaGenerator {
 
     // HashMap para almacenar el nombre de las entidades con la lista de nombres de su clave primaria.
     public static HashMap<String, List<String>> entityPrimaryKeys = new HashMap<>();
@@ -31,22 +30,16 @@ public class MySqlDatabaseGenerator {
     /**
      * Método para migrar el esquema y los datos de USchema a MySQL.
      *
-     * @param incomingRelationships ArrayList de relaciones entrantes a un nodo con su máxima cardinalidad.
-     * @param outgoingRelationships ArrayList de relaciones salientes de un nodo con su máxima cardinalidad.
-     * @param uSchemaModel Modelo USchema con el que realizar la migración.
+     * @param builderUSchemaModel Modelo USchema con el que realizar la migración.
      */
-    public static void migrateSchemaAndDataFromNeo4jToMySql(ArrayList<Record> incomingRelationships, ArrayList<Record> outgoingRelationships, USchemaModel uSchemaModel, boolean migrateData){
+    public static void migrateToMySqlSchema(HashMap<String, String> relationshipsCardinality, USchemaModel builderUSchemaModel){
         // Calculo la cardinalidad de las relaciones.
-        final HashMap<String, String> relationshipCardinality = calculateRelationshipCardinality(uSchemaModel.getuRelationships(), incomingRelationships, outgoingRelationships);
         // Por cada tipo de entidad creo una tabla.
-        for (UEntityType uEntity: uSchemaModel.getUEntities().values()) {
+        for (UEntityType uEntity: builderUSchemaModel.getUEntities().values()) {
             createEntityTable(uEntity);
-            if (migrateData){
-                MySqlDataMigrator.migrateEntityData(uEntity.getName(), MetaShopSchema.getDataEntity(uEntity.getName()));
-            }
         }
         // Recorro otra vez la lista de entidades porque ya sé que están todas las tablas necesarias creadas
-        for (UEntityType uEntity: uSchemaModel.getUEntities().values()) {
+        for (UEntityType uEntity: builderUSchemaModel.getUEntities().values()) {
             // Obtengo las referencias de la entidad que estamos recorriendo.
             final ArrayList<UReference> references = uEntity.getUStructuralVariation().getReferences();
             // Para cada tipo de entidad, recorro sus referencias para ver qué tipo de relaciones tiene
@@ -54,23 +47,17 @@ public class MySqlDatabaseGenerator {
                 // Para cada referencia, consultamos su cardinalidad. Dependiendo de dicho dato, sabremos si tenemos que crear una tabla intermedia
                 // o simplemente añadir una referencia en la tabla correspondiente.
                 String relationshipName = "_" + StringUtils.lowerCase(uReference.getName());
-                ArrayList<Record> relationships = MetaShopSchema.getDataRelationships(uReference.getName());
-                switch (relationshipCardinality.get(uReference.getName())) {
+                ArrayList<Record> relationships = GraphMigrator.getDataRelationships(uReference.getName());
+                switch (relationshipsCardinality.get(uReference.getName())) {
                     case "1:1" -> {
                         // Si la cardinalidad es 1:1 quiere decir que debemos añadir una foreignKey en la tabla correspondiente a la entidad origen.
                         // p.e. User - RECOMMENDED_BY -> User | Un usuario sólo puede ser recomendado por otro usuario
                         addForeignKeyToTable(uEntity.getName(), uReference.getUEntityTypeDestination().getUStructuralVariation().getKey(), StringUtils.lowerCase(uReference.getName()));
-                        if (migrateData){
-                            MySqlDataMigrator.migrateRelationshipData1To1(uEntity.getName(), relationships, relationshipName);
-                        }
                     }
                     case "1:N" -> {
                         // Si la cardinalidad es 1:N quiere decir que debemos añadir una foreignKey en la tabla correspondiente a la entidad origen.
                         // p.e. User - ORDERS -> Order | Un usuario puede realizar 1 o más pedidos que solo van a pertenecer a él.
                         addForeignKeyToTable(uReference.getUEntityTypeDestination().getName(), uEntity.getUStructuralVariation().getKey(),  StringUtils.lowerCase(uReference.getName()));
-                        if (migrateData){
-                            MySqlDataMigrator.migreateRelationshipData1ToN(uReference.getUEntityTypeDestination().getName(), relationships, relationshipName);
-                        }
                     }
                     case "N:M" -> {
                         // Si la cardinalidad es N:M quiere decir que debemos crear una tabla intermedia para no repetir la información de las tablas implicadas en la relación.
@@ -78,9 +65,6 @@ public class MySqlDatabaseGenerator {
                         // p.e. Product - CATEGORIZED -> ProductCategory | Un producto puede pertenecer a una categoría o a muchas categorías. Una categoría puede tener muchos productos.
                         final String tableName = uEntity.getName() + relationshipName + "_" + uReference.getUEntityTypeDestination().getName();
                         createRelationshipTable(tableName, uEntity, uReference.getUEntityTypeDestination(), uReference.getUStructuralVariationFeaturedBy(), relationshipName);
-                        if (migrateData){
-                            MySqlDataMigrator.migrateRelationshipDataNToM(tableName, relationships, relationshipName);
-                        }
                     }
                 }
 
@@ -94,7 +78,7 @@ public class MySqlDatabaseGenerator {
      */
     private static void createEntityTable(UEntityType uEntity){
             // Genero la primaryKey (solo los nombres de la columna) que voy a añadir a la tabla.
-            MySqlDatabaseGenerator.generatePrimaryKey(uEntity.getName(), uEntity.getUStructuralVariation().getKey());
+            MySqlSchemaGenerator.generatePrimaryKey(uEntity.getName(), uEntity.getUStructuralVariation().getKey());
             // Lista para guardar las primaryKeys con sus respectivos tipos.
             final ArrayList<String> primaryKey = new ArrayList<>();
             // Lista para guardar las primaryKeys sin sus respectivos tipos.
@@ -182,10 +166,10 @@ public class MySqlDatabaseGenerator {
     private static void createRelationshipTable(String tableName, UEntityType originEntity, UEntityType destinationEntity, UStructuralVariation relationshipStructuralVariation, String relationshipName){
         ArrayList<String> originAttributes = new ArrayList<>();
         ArrayList<String> originAttributesWithoutType = new ArrayList<>();
-        MySqlDatabaseGenerator.relationshipAttributes.put(relationshipName, new ArrayList<>());
+        MySqlSchemaGenerator.relationshipAttributes.put(relationshipName, new ArrayList<>());
 
         for (UAttribute uAttribute: relationshipStructuralVariation.getAttributes().values()) {
-            MySqlDatabaseGenerator.relationshipAttributes.get(relationshipName).add(uAttribute.getName());
+            MySqlSchemaGenerator.relationshipAttributes.get(relationshipName).add(uAttribute.getName());
         }
 
         for (UAttribute uAttribute: originEntity.getUStructuralVariation().getKey().getUAttributes()) {
@@ -233,7 +217,7 @@ public class MySqlDatabaseGenerator {
      */
     private static void createTable(String tableName, String attributes, String primaryKey){
         try {
-            Statement stmt=MetaShopSchema.con.createStatement();
+            Statement stmt= GraphMigrator.con.createStatement();
             System.out.println("CREATE TABLE " + tableName + "(" + attributes + ", PRIMARY KEY(" + primaryKey + "));");
             stmt.execute("CREATE TABLE " + tableName + "(" + attributes + ", PRIMARY KEY(" + primaryKey + "));");
         } catch (SQLException e) {
@@ -251,7 +235,7 @@ public class MySqlDatabaseGenerator {
      */
     private static void alterTableForeignKey(String tableName, String foreignKey, String referenceTableName, String primaryKeyReference){
         try {
-            Statement stmt=MetaShopSchema.con.createStatement();
+            Statement stmt= GraphMigrator.con.createStatement();
             System.out.println("ALTER TABLE " + tableName + " ADD FOREIGN KEY(" + foreignKey + ") REFERENCES " + referenceTableName + "(" + primaryKeyReference + ");");
             stmt.execute("ALTER TABLE " + tableName + " ADD FOREIGN KEY(" + foreignKey + ") REFERENCES " + referenceTableName + "(" + primaryKeyReference + ");");
         } catch (SQLException e) {
@@ -269,59 +253,12 @@ public class MySqlDatabaseGenerator {
      */
     private static void alterTableAddColumn(String tableName, String attributeName, String attributeType, String attributeMandatory){
         try {
-            Statement stmt=MetaShopSchema.con.createStatement();
+            Statement stmt= GraphMigrator.con.createStatement();
             System.out.println("ALTER TABLE " + tableName + " ADD COLUMN " + attributeName + " " + attributeType + " " + attributeMandatory + ";");
             stmt.execute("ALTER TABLE " + tableName + " ADD COLUMN " + attributeName + " " + attributeType + " " + attributeMandatory + ";");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Método para calcular la cardinalidad total de una relación.
-     *
-     * @param relationshipTypes HashMap de con el nombre de la relación y su tipo correspondiente en USchema.
-     * @param incomingRelationships Relaciones que entran a un nodo con su cardinalidad correspondiente.
-     * @param outgoingRelationships Relaciones que salen de un nodo con su cardinalidad correspondiente.
-     * @return HashMap con el nombre de la relación y su cardinalidad total.
-     */
-    public static HashMap<String, String> calculateRelationshipCardinality(HashMap<String, URelationshipType> relationshipTypes, ArrayList<Record> incomingRelationships, ArrayList<Record> outgoingRelationships){
-        HashMap<String, String> relationshipsCardinality = new HashMap<>();
-        // Obtengo la cardinalidad de las relaciones entrantes, es decir, el número máximo de relaciones que del mismo tipo de relación que llegan a un nodo.
-        HashMap<String, Integer> incomingRel = getRelationshipCardinality(incomingRelationships);
-        // Obtengo la cardinalidad de las relaciones salientes, es decir, el número máximo de relaciones que del mismo tipo de relación que salen de un nodo.
-        HashMap<String, Integer> outgoingRel = getRelationshipCardinality(outgoingRelationships);
-
-        // Para cada una de las relaciones compruebo su cardinalidad saliente y entrante.
-        outgoingRel.keySet().forEach(relationship -> {
-            int out = outgoingRel.get(relationship);
-            int in = incomingRel.get(relationship);
-            if ((out == 1 && in == 1) && relationshipTypes.get(relationship).getuStructuralVariation().getAttributes().isEmpty()){
-                relationshipsCardinality.put(relationship, "1:1");
-            }
-            // Para un tipo de relación, si se cumple que del nodo origen solo sale una relación de ese tipo (out == 1) y para el nodo destino llegan varias relaciones de ese tipo (in > 1), o viceversa
-            // y además se cumple que la relación no tiene atributos, la cardinalidad es 1:N
-            else if (((out == 1 && in > 1) || (out > 1 && in == 1)) && relationshipTypes.get(relationship).getuStructuralVariation().getAttributes().isEmpty()){
-                relationshipsCardinality.put(relationship, "1:N");
-            }
-            else {
-                // Si no se cumple ninguno de los casos anteriores, inferimos que la cardinalidad es de muchos a muchos.
-                relationshipsCardinality.put(relationship, "N:M");
-            }
-        });
-        return  relationshipsCardinality;
-    }
-
-    /**
-     * Método para obtener la cardinalidad de una relación de entrada o salida.
-     *
-     * @param relationshipsCardinality Relación con su cardinalidad.
-     * @return Relaciones con su cardinalidad. Dependiendo del parámetro del método, devuelve la cardinalidad de salida o de entrada de una relación.
-     */
-    private static HashMap<String, Integer> getRelationshipCardinality(ArrayList<Record> relationshipsCardinality){
-        HashMap<String, Integer> relationshipCardinality = new HashMap<>();
-        relationshipsCardinality.forEach(relationship -> relationshipCardinality.put(relationship.values().get(0).asString(), relationship.values().get(1).asInt()));
-        return relationshipCardinality;
     }
 
     /**
@@ -345,6 +282,7 @@ public class MySqlDatabaseGenerator {
             case "Double" -> "FLOAT(10,2)";
             case "Boolean" -> "BOOL";
             case "String" -> "VARCHAR(200)";
+            case "Date" -> "DATE";
             default -> null;
         };
     }

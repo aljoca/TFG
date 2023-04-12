@@ -1,20 +1,53 @@
 package metashop;
 
+import metashop.uschema.USchemaModel;
+import metashop.uschema.entities.UEntityType;
+import metashop.uschema.features.UReference;
+import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalNode;
 import java.sql.*;
 
+import org.neo4j.driver.internal.value.DateValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.types.Node;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Clase para la migración exclusiva de datos.
  */
 public class MySqlDataMigrator {
+
+
+    /**
+     * Método para migrar los datos de Neo4J a MySQL.
+     *
+     * @param builderUSchemaModel Modelo USchema con el que realizar la migración.
+     */
+    public static void migrateDataToMySql(HashMap<String, String> relationshipsCardinality, USchemaModel builderUSchemaModel){
+        for (UEntityType uEntity: builderUSchemaModel.getUEntities().values()) {
+            MySqlDataMigrator.migrateEntityData(uEntity.getName(), GraphMigrator.getDataEntity(uEntity.getName()));
+        }
+        for (UEntityType uEntity: builderUSchemaModel.getUEntities().values()) {
+            final ArrayList<UReference> references = uEntity.getUStructuralVariation().getReferences();
+            for (UReference uReference: references) {
+                String relationshipName = "_" + StringUtils.lowerCase(uReference.getName());
+                ArrayList<Record> relationships = GraphMigrator.getDataRelationships(uReference.getName());
+                switch (relationshipsCardinality.get(uReference.getName())) {
+                    case "1:1" -> MySqlDataMigrator.migrateRelationshipData1To1(uEntity.getName(), relationships, relationshipName);
+                    case "1:N" -> MySqlDataMigrator.migreateRelationshipData1ToN(uReference.getUEntityTypeDestination().getName(), relationships, relationshipName);
+                    case "N:M" -> {
+                        final String tableName = uEntity.getName() + relationshipName + "_" + uReference.getUEntityTypeDestination().getName();
+                        MySqlDataMigrator.migrateRelationshipDataNToM(tableName, relationships, relationshipName);
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Método para migrar los datos de un tipo de entidad.
@@ -24,7 +57,7 @@ public class MySqlDataMigrator {
      */
     public static void migrateEntityData(String tableName, ArrayList<Record> entities){
         try {
-            Statement stmt=MetaShopSchema.con.createStatement();
+            Statement stmt= GraphMigrator.con.createStatement();
             for (Record entity: entities) {
                 InternalNode entityNode = ((InternalNode) entity.values().get(0).asNode());
                 ArrayList<String> attributes = new ArrayList<>();
@@ -35,8 +68,18 @@ public class MySqlDataMigrator {
                     if (value instanceof ListValue){
                         values.add(createJsonAttributeValue((ListValue) value, key));
                     }
-                    else values.add(String.valueOf(value));
+                    else {
+                        // Esto es necesario porque cuando obtengo las fechas en Neo4J no puedo formatearlas.
+                        // Así compruebo si el atributo que estoy migrando es de tipo Date. Lo malo de esto es que
+                        // lo tengo que comprobar por cada atributo.
+                        if (value instanceof DateValue) {
+                            values.add("'" + value + "'");
+                        }
+                        else values.add(String.valueOf(value));
+
+                    }
                 });
+                System.out.println("INSERT INTO " + tableName + "(" + String.join(",",attributes) + ") VALUES (" + String.join(",", values) + ");");
                 stmt.execute("INSERT INTO " + tableName + "(" + String.join(",",attributes) + ") VALUES (" + String.join(",", values) + ");");
             }
         } catch (SQLException e) {
@@ -104,8 +147,8 @@ public class MySqlDataMigrator {
      */
     private static String updateTable(Node setNode, Node whereNode, String tableName, String relationshipName){
         // Obtengo los atributos a setear con sus valores y las condiciones para encontrar la entrada a actualizar.
-        ArrayList<String> setAttributes = getAttributeValue((ArrayList<String>) MySqlDatabaseGenerator.entityPrimaryKeys.get(MetaShopSchema.appendLabels(setNode)), relationshipName, setNode);
-        ArrayList<String> whereConditions = getAttributeValue((ArrayList<String>) MySqlDatabaseGenerator.entityPrimaryKeys.get(MetaShopSchema.appendLabels(whereNode)), whereNode);
+        ArrayList<String> setAttributes = getAttributeValue((ArrayList<String>) MySqlSchemaGenerator.entityPrimaryKeys.get(GraphMigrator.appendLabels(setNode)), relationshipName, setNode);
+        ArrayList<String> whereConditions = getAttributeValue((ArrayList<String>) MySqlSchemaGenerator.entityPrimaryKeys.get(GraphMigrator.appendLabels(whereNode)), whereNode);
         String set = String.join(",", setAttributes);
         String where = String.join(" AND ", whereConditions);
         return "UPDATE " + tableName + " SET " + set + " WHERE " + where + ";";
@@ -120,7 +163,7 @@ public class MySqlDataMigrator {
      */
     public static void migrateRelationshipData1To1(String tableName, ArrayList<Record> relationships, String relationshipName){
         try {
-            Statement stmt=MetaShopSchema.con.createStatement();
+            Statement stmt= GraphMigrator.con.createStatement();
             for (Record relationship: relationships) {
                 Node originNode =  relationship.values().get(0).asNode();
                 Node destinationNode =  relationship.values().get(1).asNode();
@@ -140,7 +183,7 @@ public class MySqlDataMigrator {
      */
     public static void migreateRelationshipData1ToN(String tableName, ArrayList<Record> relationships, String relationshipName){
         try {
-            Statement stmt=MetaShopSchema.con.createStatement();
+            Statement stmt= GraphMigrator.con.createStatement();
             for (Record relationship: relationships) {
                 Node originNode =  relationship.values().get(0).asNode();
                 Node destinationNode =  relationship.values().get(1).asNode();
@@ -159,7 +202,7 @@ public class MySqlDataMigrator {
      */
     public static void migrateRelationshipDataNToM(String tableName, ArrayList<Record> relationships, String relationshipName){
         try {
-            Statement stmt=MetaShopSchema.con.createStatement();
+            Statement stmt= GraphMigrator.con.createStatement();
             // Recorremos las relaciones. Todas las relaciones son del mismo tipo (relationshipName).
             for (Record relacion: relationships) {
                 // Obtengo el nodo origen y destino de la relación que estamos recorriendo.
@@ -167,8 +210,8 @@ public class MySqlDataMigrator {
                 Node destinationNode =  relacion.values().get(1).asNode();
 
                 // Obtengo las primaryKeys del nodo origen y destino
-                ArrayList<String> originPrimaryKeys = (ArrayList<String>) MySqlDatabaseGenerator.entityPrimaryKeys.get(MetaShopSchema.appendLabels(originNode));
-                ArrayList<String> destionationPrimaryKeys = (ArrayList<String>) MySqlDatabaseGenerator.entityPrimaryKeys.get(MetaShopSchema.appendLabels(destinationNode));
+                ArrayList<String> originPrimaryKeys = (ArrayList<String>) MySqlSchemaGenerator.entityPrimaryKeys.get(GraphMigrator.appendLabels(originNode));
+                ArrayList<String> destionationPrimaryKeys = (ArrayList<String>) MySqlSchemaGenerator.entityPrimaryKeys.get(GraphMigrator.appendLabels(destinationNode));
 
                 ArrayList<String> originPrimaryKeyValues = new ArrayList<>();
                 ArrayList<String> destinationPrimaryKeyValues = new ArrayList<>();
@@ -186,7 +229,7 @@ public class MySqlDataMigrator {
                 ArrayList<String> relationshipAttributesValues = new ArrayList<>();
 
                 // Recorro la lista de atributos de la relación y guardo sus valores
-                for (String relationshipAttribute: MySqlDatabaseGenerator.relationshipAttributes.get(relationshipName)) {
+                for (String relationshipAttribute: MySqlSchemaGenerator.relationshipAttributes.get(relationshipName)) {
                     relationshipAttributes.add(relationshipAttribute);
                     Value attributeValue = relacion.values().get(2).get(relationshipAttribute);
                     // Si es una colección, trato el atributo como un json

@@ -14,18 +14,26 @@ import java.util.List;
 
 public class USchemaModel {
 
+    private static USchemaModel uSchemaModel;
     private final String uName;
     private final HashMap<String, UEntityType> uEntities;
     private final HashMap<String, URelationshipType> uRelationships;
-    private final GraphSchemaModel graphSchemaModel;
+    private final GraphSchemaModel builderGraphSchemaModel;
 
-    public USchemaModel(GraphSchemaModel graphSchemaModel) {
-        this.graphSchemaModel = graphSchemaModel;
-        this.uName = graphSchemaModel.getName();
+    private USchemaModel(GraphSchemaModel builderGraphSchemaModel) {
+        this.builderGraphSchemaModel = builderGraphSchemaModel;
+        this.uName = builderGraphSchemaModel.getName();
         this.uEntities = new HashMap<>();
         this.uRelationships = new HashMap<>();
-        fillUEntities(graphSchemaModel.getEntities());
-        processRelationships(graphSchemaModel.getRelationships());
+        fillUEntities(builderGraphSchemaModel.getEntities());
+        processRelationships(builderGraphSchemaModel.getRelationships());
+    }
+
+    public static USchemaModel getUSchemaModel(GraphSchemaModel graphSchemaModel){
+        if (uSchemaModel == null){
+            uSchemaModel = new USchemaModel(graphSchemaModel);
+        }
+        return uSchemaModel;
     }
 
     private void fillUEntities(HashMap<String, EntityType> graphModelEntities){
@@ -48,35 +56,15 @@ public class USchemaModel {
     }
 
     private void processEntity(EntityType entityType){
+        if (isMultiLabeled(entityType.getLabels().size())) {
+            buildMultiLabeledEntity(entityType);
+        } else {
+            buildSingleLabeledEntity(entityType);
+        }
+    }
 
-        // Si la entidad solo tiene una etiqueta, compruebo si existe en la colección de entidades.
-        // Si no existe, la añado a la colección de entidades como una UEntityTypeSingleLabeled
-        if (entityType.getLabels().size() == 1) {
-            if (!this.uEntities.containsKey(entityType.getName()))
-                this.uEntities.put(entityType.getName(), new UEntityTypeSingleLabeled(entityType.getName(), entityType));
-        }
-        else {
-            // En el caso de que tengamos una entidad con varias etiquetas, primero vamos a ver si hay que crear alguna UEntityTypeSingleLabeled
-            List<UEntityType> parentEntities = new LinkedList<>();
-            entityType.getLabels().forEach(label -> {
-                final String labelName = label.getName();
-                    /*
-                        Esto puede pasar, por ejemplo, si primero viene una entidad con la etiqueta "Actor" y seguidamente
-                        llega otra con las etiquetas "Actor" y "Director".
-                        Si no existe, creo la entidad, la añado a la colección de entidades y a la lista de entidades "padre".
-                        Si existe, solamente la añado a la lista de entidades "padre".
-                    */
-                if (!this.uEntities.containsKey(labelName)) {
-                    UEntityType uEntityType = new UEntityTypeSingleLabeled(labelName, graphSchemaModel.getEntities().get(labelName));
-                    parentEntities.add(uEntityType);
-                    this.uEntities.put(label.getName(), uEntityType);
-                } else {
-                    parentEntities.add(this.uEntities.get(labelName));
-                }
-            });
-            // Una vez se han creado las entidades y/o se han añadido a las entidades padre, creamos nuestro UEntityTypeMultiLabeled
-            this.uEntities.put(entityType.getName(), new UEntityTypeMultiLabeled(entityType.getName(), entityType, parentEntities));
-        }
+    private boolean isMultiLabeled(int labels){
+        return (labels > 1);
     }
 
     public HashMap<String, UEntityType> getUEntities() {
@@ -85,6 +73,33 @@ public class USchemaModel {
 
     public HashMap<String, URelationshipType> getuRelationships() {
         return uRelationships;
+    }
+
+    public void buildSingleLabeledEntity(EntityType entityType){
+        if (!this.uEntities.containsKey(entityType.getName()))
+            this.uEntities.put(entityType.getName(), new UEntityTypeSingleLabeled(entityType.getName(), entityType));
+    }
+
+    public void buildMultiLabeledEntity(EntityType entityType){
+        List<UEntityType> parentEntities = new LinkedList<>();
+        entityType.getLabels().forEach(label -> {
+            final String labelName = label.getName();
+                    /*
+                        Esto puede pasar, por ejemplo, si primero viene una entidad con la etiqueta "Actor" y seguidamente
+                        llega otra con las etiquetas "Actor" y "Director".
+                        Si no existe, creo la entidad, la añado a la colección de entidades y a la lista de entidades "padre".
+                        Si existe, solamente la añado a la lista de entidades "padre".
+                    */
+            if (!this.uEntities.containsKey(labelName)) {
+                UEntityType uEntityType = new UEntityTypeSingleLabeled(labelName, builderGraphSchemaModel.getEntities().get(labelName));
+                parentEntities.add(uEntityType);
+                this.uEntities.put(label.getName(), uEntityType);
+            } else {
+                parentEntities.add(this.uEntities.get(labelName));
+            }
+        });
+        // Una vez se han creado las entidades y/o se han añadido a las entidades padre, creamos nuestro UEntityTypeMultiLabeled
+        this.uEntities.put(entityType.getName(), new UEntityTypeMultiLabeled(entityType.getName(), entityType, parentEntities));
     }
 
     @Override

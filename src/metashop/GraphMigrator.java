@@ -10,14 +10,15 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
-public abstract class MetaShopSchema implements AutoCloseable{
+public abstract class GraphMigrator implements AutoCloseable{
     private static Driver driver;
     private final static String uri = "bolt://localhost:7687";
     private final static String user = "neo4j";
     private final static String password = "12345678";
-    public final static List<String> types = List.of("Double", "Long", "Boolean", "String");
+    public final static List<String> types = List.of("Double", "Long", "Boolean", "String", "Date");
     public static Connection con;
 
 
@@ -66,10 +67,10 @@ public abstract class MetaShopSchema implements AutoCloseable{
             return session.executeWrite(tx -> {
                 Query query = new Query("""
                         MATCH (n)-[r]->()
-                        WITH id(n) AS id_nodo, labels(n) AS etiquetas, type(r) AS tipo_relacion, COUNT(*) AS cardinalidad
-                        UNWIND etiquetas AS etiqueta
-                        WITH etiqueta, tipo_relacion, MAX(cardinalidad) AS max_cardinalidad
-                        RETURN etiqueta, tipo_relacion, max_cardinalidad            
+                        WITH id(n) AS nodeId, labels(n) AS labels, type(r) AS relationshipType, COUNT(*) AS cardinality
+                        UNWIND labels AS label
+                        WITH label, relationshipType, MAX(cardinality) AS maxCardinality
+                        RETURN label, relationshipType, maxCardinality            
                         """);
                 Result result = tx.run(query);
                 return new ArrayList<>(result.list());
@@ -83,8 +84,8 @@ public abstract class MetaShopSchema implements AutoCloseable{
                 Query query = new Query("""
                         // Relaciones entrantes de un NODO
                         MATCH ()-[r]->(n)
-                        WITH n, type(r) AS rel_type, count(r) AS count
-                        return DISTINCT rel_type, max(count)          
+                        WITH n, type(r) AS relType, count(r) AS count
+                        return DISTINCT relType, max(count)          
                         """);
                 Result result = tx.run(query);
                 return new ArrayList<>(result.list());
@@ -98,8 +99,8 @@ public abstract class MetaShopSchema implements AutoCloseable{
                 Query query = new Query("""
                         // Relaciones salientes de un NODO
                         MATCH (n)-[r]->()
-                        WITH n, type(r) AS rel_type, count(r) AS count
-                        return DISTINCT rel_type, max(count)
+                        WITH n, type(r) AS relType, count(r) AS count
+                        return DISTINCT relType, max(count)
                                   
                         """);
                 Result result = tx.run(query);
@@ -134,7 +135,6 @@ public abstract class MetaShopSchema implements AutoCloseable{
         return labels.toString();
     }
 
-
     @Override
     public void close(){
         driver.close();
@@ -142,18 +142,21 @@ public abstract class MetaShopSchema implements AutoCloseable{
 
     public static void main(String... args) {
         driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
+
         // Obtenemos un esquema general de Neo4J para poder trabajar con USchema.
-        GraphSchemaModel graphSchema = new GraphSchemaModel("MetaShop", getNodes(), getRelationships(), getRelationshipsCardinality());
+        GraphSchemaModel graphSchema = GraphSchemaModel.getGraphSchemaModel(args[0], getNodes(), getRelationships(), getRelationshipsCardinality());
         System.out.println(graphSchema);
 
         // Obtenemos el USchema resultante del esquema general que hemos obtenido estudiando la estructura de los datos en Neo4J
-        USchemaModel uSchemaModel = new USchemaModel(graphSchema);
+        USchemaModel uSchemaModel = USchemaModel.getUSchemaModel(graphSchema);
         System.out.println(uSchemaModel);
         try {
             con= DriverManager.getConnection("jdbc:mysql://localhost:3306/migracion1","root","12345678");
             Class.forName("com.mysql.cj.jdbc.Driver");
             // Migramos USchema al esquema relacional MySQL, así como sus datos si el flag "migrateData" está a true
-            MySqlDatabaseGenerator.migrateSchemaAndDataFromNeo4jToMySql(getIncomingRelationships(), getOutgoingRelationships(), uSchemaModel, true);
+            final HashMap<String, String> relationshipsCardinality = MySqlMigrationUtils.calculateRelationshipCardinality(uSchemaModel.getuRelationships(), getIncomingRelationships(), getOutgoingRelationships());
+            MySqlSchemaGenerator.migrateToMySqlSchema(relationshipsCardinality, uSchemaModel);
+            MySqlDataMigrator.migrateDataToMySql(relationshipsCardinality, uSchemaModel);
             con.close();
         } catch (ClassNotFoundException | SQLException e) {
             throw new RuntimeException(e);
