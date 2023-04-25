@@ -68,8 +68,9 @@ public abstract class GraphMigrator implements AutoCloseable{
                 Query query = new Query("""
                         // Relaciones entrantes de un NODO
                         MATCH ()-[r]->(n)
-                        WITH n, type(r) AS relType, count(r) AS count
-                        return DISTINCT relType, max(count)          
+                        WITH labels(n) as l, n, type(r) AS relType, count(r) AS count
+                        UNWIND l as label
+                        return DISTINCT label, relType, max(count)          
                         """);
                 Result result = tx.run(query);
                 return new ArrayList<>(result.list());
@@ -83,8 +84,9 @@ public abstract class GraphMigrator implements AutoCloseable{
                 Query query = new Query("""
                         // Relaciones salientes de un NODO
                         MATCH (n)-[r]->()
-                        WITH n, type(r) AS relType, count(r) AS count
-                        return DISTINCT relType, max(count)
+                        WITH labels(n) as l, n, type(r) AS relType, count(r) AS count
+                        UNWIND l as label
+                        return DISTINCT label, relType, max(count)
                         """);
                 Result result = tx.run(query);
                 return new ArrayList<>(result.list());

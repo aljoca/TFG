@@ -54,7 +54,7 @@ public abstract class MySqlMigrationUtils {
      */
     private static HashMap<String, Integer> getRelationshipCardinality(ArrayList<Record> relationshipsCardinality){
         HashMap<String, Integer> relationshipCardinality = new HashMap<>();
-        relationshipsCardinality.forEach(relationship -> relationshipCardinality.put(relationship.values().get(0).asString(), relationship.values().get(1).asInt()));
+        relationshipsCardinality.forEach(relationship -> relationshipCardinality.put(relationship.values().get(1).asString(), relationship.values().get(2).asInt()));
         return relationshipCardinality;
     }
 
