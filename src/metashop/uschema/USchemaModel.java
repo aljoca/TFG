@@ -49,7 +49,7 @@ public class USchemaModel {
             uRelationships.put(relationshipName, uRelationshipType);
             // Creamos la referencia. Para ello, la nombramos como la relación, le pasamos la entidad destino, la structural variation de la relación y su máxima cardinalidad.
             // Además, añadimos la referencia a la lista de features de la entidad origen de la relación.
-            UReference uReference = new UReference(relationship.getName(), uEntities.get(relationship.getDestination().getName()), uRelationshipType.getuStructuralVariation(), relationship.getMaxCardinality());
+            UReference uReference = new UReference(relationship.getName(), uEntities.get(relationship.getDestination().getName()), uRelationshipType.getuStructuralVariation());
             uEntities.get(relationship.getOrigin().getName()).addReference(uReference);
         });
 

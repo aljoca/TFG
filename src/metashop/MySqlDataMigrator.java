@@ -38,7 +38,7 @@ public class MySqlDataMigrator {
                 String relationshipName = "_" + StringUtils.lowerCase(uReference.getName());
                 ArrayList<Record> relationships = GraphMigrator.getDataRelationships(uReference.getName());
                 switch (relationshipsCardinality.get(uReference.getName())) {
-                    case "1:1" -> MySqlDataMigrator.migrateRelationshipData1To1(uEntity.getName(), relationships, relationshipName);
+                    case "1:1", "N:1" -> MySqlDataMigrator.migrateRelationshipData1To1(uEntity.getName(), relationships, relationshipName);
                     case "1:N" -> MySqlDataMigrator.migreateRelationshipData1ToN(uReference.getUEntityTypeDestination().getName(), relationships, relationshipName);
                     case "N:M" -> {
                         final String tableName = uEntity.getName() + relationshipName + "_" + uReference.getUEntityTypeDestination().getName();

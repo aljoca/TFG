@@ -62,22 +62,6 @@ public abstract class GraphMigrator implements AutoCloseable{
         }
     }
 
-    private static ArrayList<Record> getRelationshipsCardinality(){
-        try (Session session = driver.session()) {
-            return session.executeWrite(tx -> {
-                Query query = new Query("""
-                        MATCH (n)-[r]->()
-                        WITH id(n) AS nodeId, labels(n) AS labels, type(r) AS relationshipType, COUNT(*) AS cardinality
-                        UNWIND labels AS label
-                        WITH label, relationshipType, MAX(cardinality) AS maxCardinality
-                        RETURN label, relationshipType, maxCardinality            
-                        """);
-                Result result = tx.run(query);
-                return new ArrayList<>(result.list());
-            });
-        }
-    }
-
     private static ArrayList<Record> getIncomingRelationships(){
         try (Session session = driver.session()) {
             return session.executeWrite(tx -> {
@@ -101,7 +85,6 @@ public abstract class GraphMigrator implements AutoCloseable{
                         MATCH (n)-[r]->()
                         WITH n, type(r) AS relType, count(r) AS count
                         return DISTINCT relType, max(count)
-                                  
                         """);
                 Result result = tx.run(query);
                 return new ArrayList<>(result.list());
@@ -144,7 +127,7 @@ public abstract class GraphMigrator implements AutoCloseable{
         driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
 
         // Obtenemos un esquema general de Neo4J para poder trabajar con USchema.
-        GraphSchemaModel graphSchema = GraphSchemaModel.getGraphSchemaModel(args[0], getNodes(), getRelationships(), getRelationshipsCardinality());
+        GraphSchemaModel graphSchema = GraphSchemaModel.getGraphSchemaModel(args[0], getNodes(), getRelationships(), getOutgoingRelationships());
         System.out.println(graphSchema);
 
         // Obtenemos el USchema resultante del esquema general que hemos obtenido estudiando la estructura de los datos en Neo4J

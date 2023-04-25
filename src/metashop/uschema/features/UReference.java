@@ -7,18 +7,12 @@ public class UReference extends ULogicalFeature {
 
     private final UEntityType uEntityTypeDestination;
     private final UStructuralVariation featuredBy;
-    private final int lowerBoundCardinality;
 
-    // Tengo que ver cómo calcular el upperBoundCardinality
-    private int upperBoundCardinality;
-
-    public UReference(String referenceName, UEntityType destination, UStructuralVariation uStructuralVariation, int upperBoundCardinality) {
+    public UReference(String referenceName, UEntityType destination, UStructuralVariation uStructuralVariation) {
         super(referenceName, true);
         this.uEntityTypeDestination = destination;
         this.featuredBy = uStructuralVariation;
         uStructuralVariation.addFeature(this);
-        this.lowerBoundCardinality = 1;
-        this.upperBoundCardinality = upperBoundCardinality;
     }
 
     public UEntityType getUEntityTypeDestination() {

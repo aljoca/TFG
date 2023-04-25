@@ -47,16 +47,16 @@ public class MySqlSchemaGenerator {
                 // Para cada referencia, consultamos su cardinalidad. Dependiendo de dicho dato, sabremos si tenemos que crear una tabla intermedia
                 // o simplemente añadir una referencia en la tabla correspondiente.
                 String relationshipName = "_" + StringUtils.lowerCase(uReference.getName());
-                ArrayList<Record> relationships = GraphMigrator.getDataRelationships(uReference.getName());
                 switch (relationshipsCardinality.get(uReference.getName())) {
-                    case "1:1" -> {
-                        // Si la cardinalidad es 1:1 quiere decir que debemos añadir una foreignKey en la tabla correspondiente a la entidad origen.
+                    case "1:1", "N:1" -> {
+                        // Si la cardinalidad es 1:1 o N:1 quiere decir que debemos añadir una foreignKey en la tabla correspondiente a la entidad origen.
                         // p.e. User - RECOMMENDED_BY -> User | Un usuario sólo puede ser recomendado por otro usuario
+                        // p.e. Product - MANUFACTURED_BY -> Manufacturer | Un producto solo puede ser fabricado por un fabricante, pero el fabricante puede haber fabricado muchos productos.
                         addForeignKeyToTable(uEntity.getName(), uReference.getUEntityTypeDestination().getUStructuralVariation().getKey(), StringUtils.lowerCase(uReference.getName()));
                     }
                     case "1:N" -> {
-                        // Si la cardinalidad es 1:N quiere decir que debemos añadir una foreignKey en la tabla correspondiente a la entidad origen.
-                        // p.e. User - ORDERS -> Order | Un usuario puede realizar 1 o más pedidos que solo van a pertenecer a él.
+                        // Si la cardinalidad es 1:N quiere decir que debemos añadir una foreignKey en la tabla correspondiente a la entidad destino.
+                        // p.e. User - ORDERS -> Order | Un usuario puede realizar 1 o más pedidos, pero un pedido solo puede pertenecer a un usuario.
                         addForeignKeyToTable(uReference.getUEntityTypeDestination().getName(), uEntity.getUStructuralVariation().getKey(),  StringUtils.lowerCase(uReference.getName()));
                     }
                     case "N:M" -> {

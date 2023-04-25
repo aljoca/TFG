@@ -30,9 +30,12 @@ public abstract class MySqlMigrationUtils {
             if ((out == 1 && in == 1) && relationshipTypes.get(relationship).getuStructuralVariation().getAttributes().isEmpty()){
                 relationshipsCardinality.put(relationship, "1:1");
             }
-            // Para un tipo de relación, si se cumple que del nodo origen solo sale una relación de ese tipo (out == 1) y para el nodo destino llegan varias relaciones de ese tipo (in > 1), o viceversa
+            else if ((out == 1 && in > 1) && relationshipTypes.get(relationship).getuStructuralVariation().getAttributes().isEmpty()){
+                relationshipsCardinality.put(relationship, "N:1");
+            }
+            // Para un tipo de relación, si se cumple que del nodo origen solo sale más de una relación de ese tipo (out > 1) y para el nodo destino llega una relación de ese tipo (in == 1)
             // y además se cumple que la relación no tiene atributos, la cardinalidad es 1:N
-            else if (((out == 1 && in > 1) || (out > 1 && in == 1)) && relationshipTypes.get(relationship).getuStructuralVariation().getAttributes().isEmpty()){
+            else if (((out > 1 && in == 1)) && relationshipTypes.get(relationship).getuStructuralVariation().getAttributes().isEmpty()){
                 relationshipsCardinality.put(relationship, "1:N");
             }
             else {
