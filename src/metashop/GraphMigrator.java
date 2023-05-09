@@ -15,7 +15,7 @@ import java.util.List;
 
 public abstract class GraphMigrator implements AutoCloseable{
     private static Driver driver;
-    private final static String uri = "bolt://localhost:7687";
+    private final static String uri = "neo4j://127.0.0.1:7687";
     private final static String user = "neo4j";
     private final static String password = "12345678";
     public final static List<String> types = List.of("Double", "Long", "Boolean", "String", "Date");
@@ -126,7 +126,8 @@ public abstract class GraphMigrator implements AutoCloseable{
     }
 
     public static void main(String... args) {
-        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
+        //driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
+        driver = GraphDatabase.driver(uri);
 
         // Obtenemos un esquema general de Neo4J para poder trabajar con USchema.
         GraphSchemaModel graphSchema = GraphSchemaModel.getGraphSchemaModel(args[0], getNodes(), getRelationships(), getOutgoingRelationships());
@@ -136,7 +137,9 @@ public abstract class GraphMigrator implements AutoCloseable{
         USchemaModel uSchemaModel = USchemaModel.getUSchemaModel(graphSchema);
         System.out.println(uSchemaModel);
         try {
-            con= DriverManager.getConnection("jdbc:mysql://localhost:3306/migracion1","root","12345678");
+            //con= DriverManager.getConnection("jdbc:mysql://localhost:3306/migracion1","root","12345678");
+            con= DriverManager.getConnection("jdbc:mysql://localhost:3306/migracion1", "root", "");
+
             Class.forName("com.mysql.cj.jdbc.Driver");
             // Migramos USchema al esquema relacional MySQL, así como sus datos si el flag "migrateData" está a true
             final HashMap<String, String> relationshipsCardinality = MySqlMigrationUtils.calculateRelationshipCardinality(uSchemaModel.getuRelationships(), getIncomingRelationships(), getOutgoingRelationships());
