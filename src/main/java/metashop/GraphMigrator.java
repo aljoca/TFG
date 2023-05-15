@@ -104,10 +104,24 @@ public abstract class GraphMigrator implements AutoCloseable{
         }
     }
 
-    public static ArrayList<Record> getDataRelationships(String relationshipName, String labels, String labelsArray, int labelsSize){
+    /**
+     * Método para realizar la búsqueda de nodos y relaciones.
+     * @param relationshipName Nombre de la relación.
+     * @param labelsOrigin Etiquetas del nodo origen formateadas para el match.
+     * @param labelsDestination Etiquetas del nodo destino formateadas para el match.
+     * @param labelsArrayOrigin Etiquetas del nodo origen formateadas para el where.
+     * @param labelsArrayDestination Etiquetas del nodo destino formateadas para el where.
+     * @param labelsSizeOrigin Número de etiquetas del nodo origen
+     * @param labelsSizeDestination Número de etiquetas del nodo destino
+     * @return Lista de nodos y relaciones
+     */
+    public static ArrayList<Record> getDataRelationships(String relationshipName, String labelsOrigin, String labelsDestination, String labelsArrayOrigin,
+                                                         String labelsArrayDestination, int labelsSizeOrigin, int labelsSizeDestination){
         try (Session session = driver.session()) {
             return session.executeWrite(tx -> {
-                Query query = new Query("MATCH (n" + labels + ")-[r:" + relationshipName + "]->(m) WHERE all(label IN [ " + labelsArray + "] WHERE label IN labels(n)) AND size(labels(n)) = " + labelsSize + " return n, m, r");
+                Query query = new Query("MATCH (n" + labelsOrigin + ")-[r:" + relationshipName + "]->(m" + labelsDestination +
+                        ") WHERE all(label IN [ " + labelsArrayOrigin + "] WHERE label IN labels(n)) AND size(labels(n)) = " + labelsSizeOrigin + " " +
+                        "AND all(label IN [ " + labelsArrayDestination + "] WHERE label IN labels(m)) AND size(labels(m)) = " + labelsSizeDestination + " return n, m, r");
                 Result result = tx.run(query);
                 return new ArrayList<>(result.list());
             });
@@ -139,7 +153,7 @@ public abstract class GraphMigrator implements AutoCloseable{
         System.out.println(uSchemaModel);
         try {
             //con= DriverManager.getConnection("jdbc:mysql://localhost:3306/migracion1","root","12345678");
-            con= DriverManager.getConnection("jdbc:mysql://localhost:3306/migracion1", "root", "");
+            con= DriverManager.getConnection("jdbc:mysql://localhost:3306/migracion1", "root", "12345678");
 
             Class.forName("com.mysql.cj.jdbc.Driver");
             // Migramos USchema al esquema relacional MySQL, así como sus datos si el flag "migrateData" está a true

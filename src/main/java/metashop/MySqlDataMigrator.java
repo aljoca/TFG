@@ -31,16 +31,27 @@ public class MySqlDataMigrator {
      * @param builderUSchemaModel Modelo USchema con el que realizar la migración.
      */
     public static void migrateDataToMySql(HashMap<String, String> relationshipsCardinality, USchemaModel builderUSchemaModel, GraphSchemaModel graphSchemaModel){
+        // Recorro la lista de entidades para migrar los datos de las tablas "primitivas".
         for (UEntityType uEntity: builderUSchemaModel.getUEntities().values()) {
+            // Para cada entidad, obtengo las etiquetas para poder hacer la búsqueda en Neo4J.
             ArrayList<Label> entityLabels = graphSchemaModel.getEntities().get(uEntity.getName()).getLabels();
+            // Realizo la migración de los datos de las entidades.
             MySqlDataMigrator.migrateEntityData(uEntity.getName(), GraphMigrator.getDataEntity(MySqlMigrationUtils.getLabels(entityLabels), entityLabels.size()));
         }
+        // Recorro la lista de entidades para migrar los datos de las relaciones.
         for (UEntityType uEntity: builderUSchemaModel.getUEntities().values()) {
+            // Para cada entidad, obtengo las etiquetas para poder hacer la búsqueda en Neo4J.
             ArrayList<Label> entityLabels = graphSchemaModel.getEntities().get(uEntity.getName()).getLabels();
             final ArrayList<UReference> references = uEntity.getUStructuralVariation().getReferences();
+            // Por cada referencia de la entidad origen, realizo la migración de datos.
             for (UReference uReference: references) {
+                // Obtengo las etiquetas de la entidad destino para poder hacer la búsqueda en Neo4J.
+                ArrayList<Label> uReferenceLabels = graphSchemaModel.getEntities().get(uReference.getUEntityTypeDestination().getName()).getLabels();
                 String relationshipName = "_" + StringUtils.lowerCase(uReference.getName());
-                ArrayList<Record> relationships = GraphMigrator.getDataRelationships(uReference.getName(), MySqlMigrationUtils.getLabelsDoubleDot(entityLabels), MySqlMigrationUtils.getLabels(entityLabels), entityLabels.size());
+                // Obtengo los datos a migrar de las relaciones.
+                ArrayList<Record> relationships = GraphMigrator.getDataRelationships(uReference.getName(), MySqlMigrationUtils.getLabelsDoubleDot(entityLabels), MySqlMigrationUtils.getLabelsDoubleDot(uReferenceLabels),
+                        MySqlMigrationUtils.getLabels(entityLabels), MySqlMigrationUtils.getLabels(uReferenceLabels), entityLabels.size(), uReferenceLabels.size());
+                // Compruebo qué caso se está dando, consultando la entrada de la referencia concreta en el mapa de cardinalidad.
                 switch (relationshipsCardinality.get(uReference.getName())) {
                     case "1:1", "N:1" -> MySqlDataMigrator.migrateRelationshipData1To1(uEntity.getName(), relationships, relationshipName);
                     case "1:N" -> MySqlDataMigrator.migreateRelationshipData1ToN(uReference.getUEntityTypeDestination().getName(), relationships, relationshipName);
