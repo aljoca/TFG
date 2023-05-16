@@ -41,11 +41,11 @@ public class UStructuralVariation {
             }
             features.put(property.getName(), uFeature);
             // Si la lista  de atributos de la key no está vacía, creo la Key con el nombre "KEY_" + nombre de la tabla de la que es key.
-            if (!keys.isEmpty()){
-                String keyName = "KEY_" + name;
-                features.put(keyName, new UKey(keyName, keys));
-            }
         });
+        if (!keys.isEmpty()){
+            String keyName = "KEY_" + name;
+            features.put(keyName, new UKey(keyName, keys));
+        }
     }
 
     public HashMap<String, UFeature> getFeatures() {
