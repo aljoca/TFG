@@ -77,7 +77,7 @@ public class USchemaModel {
 
     public void buildSingleLabeledEntity(EntityType entityType){
         if (!this.uEntities.containsKey(entityType.getName()))
-            this.uEntities.put(entityType.getName(), new UEntityTypeSingleLabeled(entityType.getName(), entityType));
+            this.uEntities.put(entityType.getName(), new UEntityTypeSingleLabeled(entityType));
     }
 
     public void buildMultiLabeledEntity(EntityType entityType){
@@ -92,7 +92,7 @@ public class USchemaModel {
                     */
             if (!this.uEntities.containsKey(labelName)) {
                 if (builderGraphSchemaModel.getEntities().get(labelName) == null) return;
-                UEntityType uEntityType = new UEntityTypeSingleLabeled(labelName, builderGraphSchemaModel.getEntities().get(labelName));
+                UEntityType uEntityType = new UEntityTypeSingleLabeled(builderGraphSchemaModel.getEntities().get(labelName));
                 parentEntities.add(uEntityType);
                 this.uEntities.put(label.getName(), uEntityType);
             } else {
@@ -100,7 +100,7 @@ public class USchemaModel {
             }
         });
         // Una vez se han creado las entidades y/o se han añadido a las entidades padre, creamos nuestro UEntityTypeMultiLabeled
-        this.uEntities.put(entityType.getName(), new UEntityTypeMultiLabeled(entityType.getName(), entityType, parentEntities));
+        this.uEntities.put(entityType.getName(), new UEntityTypeMultiLabeled(entityType, parentEntities));
     }
 
     @Override

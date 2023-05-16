@@ -4,8 +4,8 @@ import metashop.graphdatamodel.EntityType;
 
 public class UEntityTypeSingleLabeled extends UEntityType{
 
-    public UEntityTypeSingleLabeled(String name, EntityType entityType) {
-        super(name, entityType);
+    public UEntityTypeSingleLabeled(EntityType entityType) {
+        super(entityType);
     }
 
     @Override

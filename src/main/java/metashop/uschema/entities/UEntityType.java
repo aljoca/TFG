@@ -13,13 +13,13 @@ public abstract class UEntityType extends USchemaType{
     private final boolean root;
     private final UStructuralVariation uStructuralVariation;
 
-    public UEntityType(String name, EntityType entityType) {
-        super(name);
+    public UEntityType(EntityType entityType) {
+        super(entityType.getName());
         this.root = true;
-        this.uStructuralVariation = new UStructuralVariation(this);
+        this.uStructuralVariation = new UStructuralVariation();
         StructuralVariation structuralVariation = entityType.getStructuralVariation();
         if (Objects.nonNull(structuralVariation)){
-            this.uStructuralVariation.generateFeatures(name, structuralVariation.getProperties());
+            this.uStructuralVariation.generateFeatures(entityType.getName(), structuralVariation.getProperties());
         }
     }
 

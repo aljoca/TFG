@@ -10,8 +10,8 @@ public class UEntityTypeMultiLabeled extends UEntityType{
 
     private final HashMap<String, UEntityType> parents;
 
-    public UEntityTypeMultiLabeled(String name, EntityType entityType, List<UEntityType> parentEntities) {
-        super(name, entityType);
+    public UEntityTypeMultiLabeled(EntityType entityType, List<UEntityType> parentEntities) {
+        super(entityType);
         this.parents = (HashMap<String, UEntityType>) parentEntities.stream().collect(Collectors.toMap(UEntityType::getName, parentEntity -> parentEntity));
     }
 

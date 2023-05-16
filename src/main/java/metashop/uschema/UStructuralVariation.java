@@ -14,10 +14,8 @@ public class UStructuralVariation {
     private static int U_STRUCTURAL_VARIATION_IDENTIFIER = 1;
     private final int id;
     private final HashMap<String, UFeature> features;
-    private final USchemaType container;
 
-    public UStructuralVariation(USchemaType container) {
-        this.container = container;
+    public UStructuralVariation() {
         this.features = new HashMap<>();
         this.id = U_STRUCTURAL_VARIATION_IDENTIFIER++;
     }
@@ -96,10 +94,6 @@ public class UStructuralVariation {
             }
         }
         return references;
-    }
-
-    public USchemaType getContainer() {
-        return container;
     }
 
     @Override

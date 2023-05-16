@@ -13,7 +13,7 @@ public class URelationshipType extends USchemaType{
 
         // Aquí viene la parte chunga, que es distinguir el tipo de relación de cada propiedad de la relación.
 
-        this.uStructuralVariation = new UStructuralVariation(this);
+        this.uStructuralVariation = new UStructuralVariation();
         StructuralVariation structuralVariation = relationshipType.getStructuralVariation();
         if (Objects.nonNull(structuralVariation)){
             this.uStructuralVariation.generateFeatures(super.getName(), structuralVariation.getProperties());
