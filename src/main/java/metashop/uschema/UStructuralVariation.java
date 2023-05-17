@@ -11,13 +11,10 @@ import java.util.HashMap;
 
 public class UStructuralVariation {
 
-    private static int U_STRUCTURAL_VARIATION_IDENTIFIER = 1;
-    private final int id;
     private final HashMap<String, UFeature> features;
 
     public UStructuralVariation() {
         this.features = new HashMap<>();
-        this.id = U_STRUCTURAL_VARIATION_IDENTIFIER++;
     }
 
     public void addFeature(UFeature uFeature){
@@ -99,7 +96,6 @@ public class UStructuralVariation {
     @Override
     public String toString() {
         return "UStructuralVariation{" +
-                "id=" + id +
                 ", features=" + features +
                 '}';
     }

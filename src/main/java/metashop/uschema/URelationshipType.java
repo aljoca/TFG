@@ -10,9 +10,6 @@ public class URelationshipType extends USchemaType{
 
     public URelationshipType(RelationshipType relationshipType) {
         super(relationshipType.getName());
-
-        // Aquí viene la parte chunga, que es distinguir el tipo de relación de cada propiedad de la relación.
-
         this.uStructuralVariation = new UStructuralVariation();
         StructuralVariation structuralVariation = relationshipType.getStructuralVariation();
         if (Objects.nonNull(structuralVariation)){
