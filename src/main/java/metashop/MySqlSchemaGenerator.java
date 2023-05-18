@@ -45,7 +45,6 @@ public class MySqlSchemaGenerator {
             for (UReference uReference: references) {
                 // Para cada referencia, consultamos su cardinalidad. Dependiendo de dicho dato, sabremos si tenemos que crear una tabla intermedia
                 // o simplemente añadir una referencia en la tabla correspondiente.
-                String relationshipName = "_" + StringUtils.lowerCase(uReference.getName());
                 switch (relationshipsCardinality.get(uReference.getName())) {
                     case "1:1", "N:1" -> {
                         // Si la cardinalidad es 1:1 o N:1 quiere decir que debemos añadir una foreignKey en la tabla correspondiente a la entidad origen.
@@ -62,6 +61,7 @@ public class MySqlSchemaGenerator {
                         // Si la cardinalidad es N:M quiere decir que debemos crear una tabla intermedia para no repetir la información de las tablas implicadas en la relación.
                         // p.e. Product - IN_ORDER -> Order | Un producto puede estar incluído en un pedido o en muchos pedidos. Un pedido puede tener muchos productos.
                         // p.e. Product - CATEGORIZED -> ProductCategory | Un producto puede pertenecer a una categoría o a muchas categorías. Una categoría puede tener muchos productos.
+                        String relationshipName = "_" + StringUtils.lowerCase(uReference.getName());
                         final String tableName = uEntity.getName() + relationshipName + "_" + uReference.getUEntityTypeDestination().getName();
                         createRelationshipTable(tableName, uEntity, uReference.getUEntityTypeDestination(), uReference.getUStructuralVariationFeaturedBy(), relationshipName);
                     }
@@ -85,18 +85,16 @@ public class MySqlSchemaGenerator {
             // Lista para guardar los atributos con sus respectivos tipos.
             final ArrayList<String> attributesList = new ArrayList<>();
 
-            // Recorro la lista de keys de la entidad, ya que puede ser una key compuesta.
-            for (UAttribute uAttribute: uEntity.getUStructuralVariation().getKey().getUAttributes()) {
-                primaryKey.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType)uAttribute.getType()) + isMandatoryToMySQL(uAttribute.isMandatory()));
-                primaryKeyWithoutType.add(uAttribute.getName());
-            }
-
             // Recorro la lista de atributos de la entidad.
             for (UAttribute uAttribute: uEntity.getUStructuralVariation().getAttributes().values()) {
                 if (uAttribute.getType() instanceof UPrimitiveType){
                     // Si es de tipo primitivo, compruebo si empieza por "__" (significaría que es una key). Si no es una key, la añado a la lista de atributos
                     if (!uAttribute.getName().startsWith("__")) {
                         attributesList.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()) + isMandatoryToMySQL(uAttribute.isMandatory()));
+                    }
+                    else {
+                        primaryKey.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType)uAttribute.getType()) + isMandatoryToMySQL(uAttribute.isMandatory()));
+                        primaryKeyWithoutType.add(uAttribute.getName());
                     }
                 }
                 else {
