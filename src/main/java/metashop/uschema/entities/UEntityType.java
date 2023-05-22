@@ -10,12 +10,10 @@ import java.util.Objects;
 
 public abstract class UEntityType extends USchemaType{
 
-    private final boolean root;
     private final UStructuralVariation uStructuralVariation;
 
     public UEntityType(EntityType entityType) {
         super(entityType.getName());
-        this.root = true;
         this.uStructuralVariation = new UStructuralVariation();
         StructuralVariation structuralVariation = entityType.getStructuralVariation();
         if (Objects.nonNull(structuralVariation)){
@@ -33,13 +31,5 @@ public abstract class UEntityType extends USchemaType{
 
     public void addReference(UReference uReference){
         this.uStructuralVariation.addFeature(uReference);
-    }
-
-    @Override
-    public String toString() {
-        return "UEntityType{" +
-                "root=" + root +
-                ", name='" + super.getName() + '\'' +
-                '}';
     }
 }

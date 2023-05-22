@@ -12,15 +12,15 @@ public class GraphSchemaModel {
     private final HashMap<String, EntityType> entities;
     private final ArrayList<RelationshipType> relationships;
 
-    private GraphSchemaModel(String name, ArrayList<Record> nodes, ArrayList<Record> relationships, ArrayList<Record> relationshipsCardinality) {
+    private GraphSchemaModel(String name, ArrayList<Record> nodes, ArrayList<Record> relationships) {
         this.name = name;
         this.entities = addEntities(nodes);
-        this.relationships = addRelationships(relationships, relationshipsCardinality);
+        this.relationships = addRelationships(relationships);
     }
 
-    public static GraphSchemaModel getGraphSchemaModel(String name, ArrayList<Record> nodes, ArrayList<Record> relationships, ArrayList<Record> relationshipsCardinality){
+    public static GraphSchemaModel getGraphSchemaModel(String name, ArrayList<Record> nodes, ArrayList<Record> relationships){
         if (graphSchemaModel == null){
-            graphSchemaModel = new GraphSchemaModel(name, nodes, relationships, relationshipsCardinality);
+            graphSchemaModel = new GraphSchemaModel(name, nodes, relationships);
         }
         return graphSchemaModel;
     }
@@ -47,7 +47,7 @@ public class GraphSchemaModel {
      * @param relationships Conjunto de relaciones
      * @return ArrayList de RelationshipType
      */
-    private ArrayList<RelationshipType> addRelationships(ArrayList<Record> relationships, ArrayList<Record> relationshipsCardinality){
+    private ArrayList<RelationshipType> addRelationships(ArrayList<Record> relationships){
         ArrayList<RelationshipType> relationshipTypes = new ArrayList<>();
         relationships.forEach((Record relationship) -> {
             RelationshipType relationshipType = new RelationshipType(relationship);

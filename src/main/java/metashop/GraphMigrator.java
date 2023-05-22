@@ -145,7 +145,7 @@ public abstract class GraphMigrator implements AutoCloseable{
         driver = GraphDatabase.driver(uri);
 
         // Obtenemos un esquema general de Neo4J para poder trabajar con USchema.
-        GraphSchemaModel graphSchema = GraphSchemaModel.getGraphSchemaModel(args[0], getNodes(), getRelationships(), getOutgoingRelationships());
+        GraphSchemaModel graphSchema = GraphSchemaModel.getGraphSchemaModel(args[0], getNodes(), getRelationships());
         System.out.println(graphSchema);
 
         // Obtenemos el USchema resultante del esquema general que hemos obtenido estudiando la estructura de los datos en Neo4J

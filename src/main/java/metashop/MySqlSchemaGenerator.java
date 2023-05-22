@@ -183,8 +183,8 @@ public class MySqlSchemaGenerator {
         }
         // Creo las variables para que sea más legible
         String originPk = String.join(",", originAttributesWithoutType);
-        String destinationFk = String.join(",", destinationAttributesWithoutType);
-        String primaryKey = originPk + "," + destinationFk;
+        String destinationPk = String.join(",", destinationAttributesWithoutType);
+        String primaryKey = originPk + "," + destinationPk;
         String attributes = String.join(",", originAttributes) + "," + String.join(",", destinationAttributes);
 
         // Primero creo la tabla intermedia para la entidad origen y destino.
@@ -192,7 +192,7 @@ public class MySqlSchemaGenerator {
         // Añado las foreignKey de la entidad origen
         alterTableForeignKey(tableName, originPk, originEntity.getName(), originPk);
         // Añado las foreignKey de la entidad destino
-        alterTableForeignKey(tableName, destinationFk, destinationEntity.getName(), String.join(",", String.join(",", destinationPKReferences)));
+        alterTableForeignKey(tableName, destinationPk, destinationEntity.getName(), String.join(",", destinationPKReferences));
         for (UAttribute uAttribute: relationshipStructuralVariation.getAttributes().values()) {
             if (uAttribute.getType() instanceof UPrimitiveType) {
                 alterTableAddColumn(tableName, uAttribute.getName(), transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()), isMandatoryToMySQL(uAttribute.isMandatory()));
