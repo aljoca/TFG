@@ -77,11 +77,10 @@ public class MySqlSchemaGenerator {
      */
     private static void createEntityTable(UEntityType uEntity){
             // Genero la primaryKey (solo los nombres de la columna) que voy a añadir a la tabla.
-            MySqlSchemaGenerator.generatePrimaryKey(uEntity.getName(), uEntity.getUStructuralVariation().getKey());
+            List<String> primaryKeyWithoutType = MySqlSchemaGenerator.generatePrimaryKey(uEntity.getName(), uEntity.getUStructuralVariation().getKey());
             // Lista para guardar las primaryKeys con sus respectivos tipos.
             final ArrayList<String> primaryKey = new ArrayList<>();
             // Lista para guardar las primaryKeys sin sus respectivos tipos.
-            final ArrayList<String> primaryKeyWithoutType = new ArrayList<>();
             // Lista para guardar los atributos con sus respectivos tipos.
             final ArrayList<String> attributesList = new ArrayList<>();
 
@@ -111,10 +110,13 @@ public class MySqlSchemaGenerator {
      * @param entityName Nombre de la entidad.
      * @param key Representación de la primary key en USchema.
      */
-    private static void generatePrimaryKey(String entityName, UKey key) {
+    private static List<String> generatePrimaryKey(String entityName, UKey key) {
         // Añado una entrada en el HashMap de la entidad para guardar los nombres de sus primaryKeys
         entityPrimaryKeys.put(entityName, new ArrayList<>());
-        key.getUAttributes().forEach(uAttribute -> entityPrimaryKeys.get(entityName).add(uAttribute.getName()));
+        key.getUAttributes().forEach(uAttribute -> {
+            entityPrimaryKeys.get(entityName).add(uAttribute.getName());
+        });
+        return entityPrimaryKeys.get(entityName);
     }
 
     /**
