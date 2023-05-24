@@ -88,12 +88,11 @@ public class MySqlSchemaGenerator {
             for (UAttribute uAttribute: uEntity.getUStructuralVariation().getAttributes().values()) {
                 if (uAttribute.getType() instanceof UPrimitiveType){
                     // Si es de tipo primitivo, compruebo si empieza por "__" (significaría que es una key). Si no es una key, la añado a la lista de atributos
-                    if (!uAttribute.getName().startsWith("__")) {
-                        attributesList.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()) + isMandatoryToMySQL(uAttribute.isMandatory()));
+                    if (uAttribute.getName().startsWith("__")) {
+                        primaryKey.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType)uAttribute.getType()) + isMandatoryToMySQL(uAttribute.isMandatory()));
                     }
                     else {
-                        primaryKey.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType)uAttribute.getType()) + isMandatoryToMySQL(uAttribute.isMandatory()));
-                        primaryKeyWithoutType.add(uAttribute.getName());
+                        attributesList.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()) + isMandatoryToMySQL(uAttribute.isMandatory()));
                     }
                 }
                 else {
