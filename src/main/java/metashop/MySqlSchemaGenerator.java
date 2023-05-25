@@ -162,6 +162,9 @@ public class MySqlSchemaGenerator {
     private static void createRelationshipTable(String tableName, UEntityType originEntity, UEntityType destinationEntity, UStructuralVariation relationshipStructuralVariation, String relationshipName){
         ArrayList<String> originAttributes = new ArrayList<>();
         ArrayList<String> originAttributesWithoutType = new ArrayList<>();
+        ArrayList<String> destinationAttributes = new ArrayList<>();
+        ArrayList<String> destinationAttributesWithoutType = new ArrayList<>();
+        ArrayList<String> destinationPKReferences = new ArrayList<>();
         MySqlSchemaGenerator.relationshipAttributes.put(relationshipName, new ArrayList<>());
 
         for (UAttribute uAttribute: relationshipStructuralVariation.getAttributes().values()) {
@@ -172,10 +175,6 @@ public class MySqlSchemaGenerator {
             originAttributes.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()));
             originAttributesWithoutType.add(uAttribute.getName());
         }
-
-        ArrayList<String> destinationAttributes = new ArrayList<>();
-        ArrayList<String> destinationAttributesWithoutType = new ArrayList<>();
-        ArrayList<String> destinationPKReferences = new ArrayList<>();
 
         for (UAttribute uAttribute: destinationEntity.getUStructuralVariation().getKey().getUAttributes()) {
             destinationPKReferences.add(uAttribute.getName());
