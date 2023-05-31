@@ -165,11 +165,9 @@ public class MySqlSchemaGenerator {
         ArrayList<String> destinationAttributes = new ArrayList<>();
         ArrayList<String> destinationAttributesWithoutType = new ArrayList<>();
         ArrayList<String> destinationPKReferences = new ArrayList<>();
+        ArrayList<String> relationAttributes = new ArrayList<>();
+        ArrayList<String> relationAttributesWithoutType = new ArrayList<>();
         MySqlSchemaGenerator.relationshipAttributes.put(relationshipName, new ArrayList<>());
-
-        for (UAttribute uAttribute: relationshipStructuralVariation.getAttributes().values()) {
-            MySqlSchemaGenerator.relationshipAttributes.get(relationshipName).add(uAttribute.getName());
-        }
 
         for (UAttribute uAttribute: originEntity.getUStructuralVariation().getKey().getUAttributes()) {
             originAttributes.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()));
@@ -181,11 +179,26 @@ public class MySqlSchemaGenerator {
             destinationAttributes.add(uAttribute.getName() + relationshipName + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()));
             destinationAttributesWithoutType.add(uAttribute.getName() + relationshipName);
         }
+
+        for (UAttribute uAttribute: relationshipStructuralVariation.getAttributes().values()) {
+            MySqlSchemaGenerator.relationshipAttributes.get(relationshipName).add(uAttribute.getName());
+            if (uAttribute.getType() instanceof UPrimitiveType) {
+                relationAttributes.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()));
+                relationAttributesWithoutType.add(uAttribute.getName());
+            }
+            else {
+                relationAttributes.add(uAttribute.getName() + " JSON");
+                relationAttributesWithoutType.add(uAttribute.getName());
+            }
+        }
+
         // Creo las variables para que sea más legible
         String originPk = String.join(",", originAttributesWithoutType);
         String destinationPk = String.join(",", destinationAttributesWithoutType);
-        String primaryKey = originPk + "," + destinationPk;
-        String attributes = String.join(",", originAttributes) + "," + String.join(",", destinationAttributes);
+        String relationPk = String.join(",", relationAttributesWithoutType);
+        String primaryKey = originPk + "," + destinationPk +"," + relationPk;
+        String attributes = String.join(",", originAttributes) + "," + String.join(",", destinationAttributes)
+                + "," + String.join(",", relationAttributes);
 
         // Primero creo la tabla intermedia para la entidad origen y destino.
         createTable(tableName, attributes, primaryKey);
@@ -193,14 +206,6 @@ public class MySqlSchemaGenerator {
         alterTableForeignKey(tableName, originPk, originEntity.getName(), originPk);
         // Añado las foreignKey de la entidad destino
         alterTableForeignKey(tableName, destinationPk, destinationEntity.getName(), String.join(",", destinationPKReferences));
-        for (UAttribute uAttribute: relationshipStructuralVariation.getAttributes().values()) {
-            if (uAttribute.getType() instanceof UPrimitiveType) {
-                alterTableAddColumn(tableName, uAttribute.getName(), transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()), isMandatoryToMySQL(uAttribute.isMandatory()));
-            }
-            else {
-                alterTableAddColumn(tableName, uAttribute.getName(), "JSON", isMandatoryToMySQL(uAttribute.isMandatory()));
-            }
-        }
     }
 
     /**

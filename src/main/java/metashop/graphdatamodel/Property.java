@@ -35,11 +35,10 @@ public class Property {
         return type;
     }
 
-    @Override
-    public String toString() {
-        return "Property{" +
-                "name='" + name +
-                "', type=" + type +
-                '}';
-    }
-}
+    @Override public String toString() {
+    return "Property{" +
+    "name='" + name + '\'' +
+    ", type=" + type +
+    ", mandatory=" + mandatory +
+    '}';
+}}
