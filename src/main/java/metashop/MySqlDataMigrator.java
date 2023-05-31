@@ -246,7 +246,8 @@ public class MySqlDataMigrator {
                 // Recorro la lista de atributos de la relación y guardo sus valores
                 for (String relationshipAttribute: MySqlSchemaGenerator.relationshipAttributes.get(relationshipName)) {
                     relationshipAttributes.add(relationshipAttribute);
-                    Value attributeValue = relacion.values().get(2).get(relationshipAttribute);
+                    Value attributeValue = relacion.values().get(2).get(
+                            StringUtils.substring(relationshipAttribute, 0, relationshipAttribute.length()-3));
                     // Si es una colección, trato el atributo como un json
                     if (attributeValue instanceof ListValue){
                         relationshipAttributesValues.add(createJsonAttributeValue((ListValue) attributeValue, relationshipAttribute));

@@ -181,14 +181,14 @@ public class MySqlSchemaGenerator {
         }
 
         for (UAttribute uAttribute: relationshipStructuralVariation.getAttributes().values()) {
-            MySqlSchemaGenerator.relationshipAttributes.get(relationshipName).add(uAttribute.getName());
+            MySqlSchemaGenerator.relationshipAttributes.get(relationshipName).add(uAttribute.getName()+"Rel");
             if (uAttribute.getType() instanceof UPrimitiveType) {
-                relationAttributes.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()));
-                relationAttributesWithoutType.add(uAttribute.getName());
+                relationAttributes.add(uAttribute.getName() + "Rel " + transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()));
+                relationAttributesWithoutType.add(uAttribute.getName() + "Rel");
             }
             else {
-                relationAttributes.add(uAttribute.getName() + " JSON");
-                relationAttributesWithoutType.add(uAttribute.getName());
+                relationAttributes.add(uAttribute.getName() + "Rel JSON");
+                relationAttributesWithoutType.add(uAttribute.getName() + "Rel");
             }
         }
 
