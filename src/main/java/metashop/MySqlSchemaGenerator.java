@@ -196,9 +196,12 @@ public class MySqlSchemaGenerator {
         String originPk = String.join(",", originAttributesWithoutType);
         String destinationPk = String.join(",", destinationAttributesWithoutType);
         String relationPk = String.join(",", relationAttributesWithoutType);
-        String primaryKey = originPk + "," + destinationPk +"," + relationPk;
-        String attributes = String.join(",", originAttributes) + "," + String.join(",", destinationAttributes)
-                + "," + String.join(",", relationAttributes);
+        String primaryKey = originPk + "," + destinationPk;
+        String attributes = String.join(",", originAttributes) + "," + String.join(",", destinationAttributes) ;
+        if(!relationAttributes.isEmpty()) {
+            attributes = attributes + "," + String.join(",", relationAttributes);
+            primaryKey = primaryKey + "," + relationPk;
+        }
 
         // Primero creo la tabla intermedia para la entidad origen y destino.
         createTable(tableName, attributes, primaryKey);

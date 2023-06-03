@@ -80,19 +80,8 @@ public class MySqlDataMigrator {
                 entityNode.keys().forEach(key -> {
                     attributes.add(key);
                     Value value = entityNode.get(key);
-                    if (value instanceof ListValue){
-                        values.add(createJsonAttributeValue((ListValue) value, key));
-                    }
-                    else {
-                        // Esto es necesario porque cuando obtengo las fechas en Neo4J no puedo formatearlas.
-                        // Así compruebo si el atributo que estoy migrando es de tipo Date. Lo malo de esto es que
-                        // lo tengo que comprobar por cada atributo.
-                        if (value instanceof DateValue) {
-                            values.add("'" + value + "'");
-                        }
-                        else values.add(String.valueOf(value));
-
-                    }
+                    String attributeValue = getFormattedAttributeValue(value, key);
+                    values.add(attributeValue);
                 });
                 System.out.println("INSERT INTO " + tableName + "(" + String.join(",",attributes) + ") VALUES (" + String.join(",", values) + ");");
                 stmt.execute("INSERT INTO " + tableName + "(" + String.join(",",attributes) + ") VALUES (" + String.join(",", values) + ");");
@@ -132,8 +121,10 @@ public class MySqlDataMigrator {
      */
     private static ArrayList<String> getAttributeValue(ArrayList<String> nodeAttributes, String relationshipName, Node node){
         ArrayList<String> attributesValues = new ArrayList<>();
+        String attributeValue;
         for (String attribute: nodeAttributes) {
-            attributesValues.add(attribute + relationshipName + " = " + node.get(attribute));
+            attributeValue = getFormattedAttributeValue(node.get(attribute), attribute);
+            attributesValues.add(attribute + relationshipName + " = " + attributeValue);
         }
         return attributesValues;
     }
@@ -252,7 +243,14 @@ public class MySqlDataMigrator {
                     if (attributeValue instanceof ListValue){
                         relationshipAttributesValues.add(createJsonAttributeValue((ListValue) attributeValue, relationshipAttribute));
                     }
-                    else relationshipAttributesValues.add(attributeValue.toString());
+                    else {
+                        if (attributeValue instanceof DateValue) {
+                            relationshipAttributesValues.add("'" + attributeValue + "'");
+                        }
+                        else {
+                            relationshipAttributesValues.add(attributeValue.toString());
+                        }
+                    }
                 }
                 System.out.println(getInsertSentence(tableName, originPrimaryKeys, destinationPrimaryKeyWithoutValues,
                         relationshipAttributes, originPrimaryKeyValues, destinationPrimaryKeyValues, relationshipAttributesValues));
@@ -286,6 +284,23 @@ public class MySqlDataMigrator {
                 String.join(",", destinationPrimaryKeysColumnsWithoutValue) + "," +  String.join(",", relationshipAttributes) + ") VALUES (" + String.join(",",originPrimaryKeysColumns)
                 + "," + String.join(",", destinationPrimaryKeysColumns) + "," +String.join(",", relationshipAttributesValues) + ");";
 
+    }
+
+    private static String getFormattedAttributeValue(Value value, String key){
+        String attributeValue;
+        if (value instanceof ListValue){
+            attributeValue = createJsonAttributeValue((ListValue) value, key);
+        }
+        else {
+            // Esto es necesario porque cuando obtengo las fechas en Neo4J no puedo formatearlas.
+            // Así compruebo si el atributo que estoy migrando es de tipo Date. Lo malo de esto es que
+            // lo tengo que comprobar por cada atributo.
+            if (value instanceof DateValue) {
+                attributeValue = "'" + value + "'";
+            }
+            else attributeValue = String.valueOf(value);
+        }
+        return attributeValue;
     }
 
 }
