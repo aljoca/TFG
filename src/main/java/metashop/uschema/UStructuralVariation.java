@@ -33,7 +33,7 @@ public class UStructuralVariation {
             UAttribute uFeature = new UAttribute(property);
             // Si el nombre del atributo empieza por "__" lo añado a la lista de atributos de una key, que finalmente será parte de una PK y una FK.
             // Esto lo hago porque las PK y FK pueden ser compuestas.
-            if (property.getName().startsWith("__")){
+            if (property.getName().startsWith("_")){
                 keys.add(uFeature);
             }
             features.put(property.getName(), uFeature);

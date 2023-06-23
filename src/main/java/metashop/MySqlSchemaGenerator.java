@@ -46,10 +46,13 @@ public class MySqlSchemaGenerator {
                 // Para cada referencia, consultamos su cardinalidad. Dependiendo de dicho dato, sabremos si tenemos que crear una tabla intermedia
                 // o simplemente añadir una referencia en la tabla correspondiente.
                 switch (relationshipsCardinality.get(uReference.getName())) {
-                    case "1:1", "N:1" -> {
+                    case "1:1" -> {
                         // Si la cardinalidad es 1:1 o N:1 quiere decir que debemos añadir una foreignKey en la tabla correspondiente a la entidad origen.
                         // p.e. User - RECOMMENDED_BY -> User | Un usuario sólo puede ser recomendado por otro usuario
                         // p.e. Product - MANUFACTURED_BY -> Manufacturer | Un producto solo puede ser fabricado por un fabricante, pero el fabricante puede haber fabricado muchos productos.
+                        addForeignKeyToTableUnique(uEntity.getName(), uReference.getUEntityTypeDestination().getUStructuralVariation().getKey(), StringUtils.lowerCase(uReference.getName()));
+                    }
+                    case "N:1" -> {
                         addForeignKeyToTable(uEntity.getName(), uReference.getUEntityTypeDestination().getUStructuralVariation().getKey(), StringUtils.lowerCase(uReference.getName()));
                     }
                     case "1:N" -> {
@@ -88,7 +91,7 @@ public class MySqlSchemaGenerator {
             for (UAttribute uAttribute: uEntity.getUStructuralVariation().getAttributes().values()) {
                 if (uAttribute.getType() instanceof UPrimitiveType){
                     // Si es de tipo primitivo, compruebo si empieza por "__" (significaría que es una key). Si no es una key, la añado a la lista de atributos
-                    if (uAttribute.getName().startsWith("__")) {
+                    if (uAttribute.getName().startsWith("_")) {
                         primaryKey.add(uAttribute.getName() + " " + transformAtributeTypeToMySQL((UPrimitiveType)uAttribute.getType()) + isMandatoryToMySQL(uAttribute.isMandatory()));
                     }
                     else {
@@ -141,6 +144,30 @@ public class MySqlSchemaGenerator {
         }
         // Creo las variables para que quede más legible.
         String foreignKey = String.join(",", foreignKeyAttributes);
+        String referenceTableName = StringUtils.substring(foreignK.getName(), 4); // Hago esto porque foreignK tiene el formato "KEY_Entidad"
+        String primaryKeyReference = String.join(",", reference);
+
+        // Añado la foreignKey a la tabla correspondiente.
+        alterTableForeignKey(tableName, foreignKey, referenceTableName , primaryKeyReference);
+    }
+
+    private static void addForeignKeyToTableUnique(String tableName, UKey foreignK, String relationshipName){
+        ArrayList<String> foreignKeyAttributes = new ArrayList<>();
+        ArrayList<String> reference = new ArrayList<>();
+
+        for (UAttribute uAttribute: foreignK.getUAttributes()) {
+            // Creo la variable para que quede más legible.
+            String attributeName = uAttribute.getName() + "_" + relationshipName;
+            // Creo una columna con el nombre del atributo seguido de "_" y el nombre de la relación.
+            alterTableAddColumn(tableName, attributeName , transformAtributeTypeToMySQL((UPrimitiveType) uAttribute.getType()), isMandatoryToMySQL(uAttribute.isMandatory()));
+            // Añado el nombre del atributo con la nueva nomenclatura como foreignKey, y el nombre original del atributo como referencia.
+            foreignKeyAttributes.add(attributeName);
+            reference.add(uAttribute.getName());
+        }
+
+        // Creo las variables para que quede más legible.
+        String foreignKey = String.join(",", foreignKeyAttributes);
+        alterTableAddUnique(tableName, foreignKey);
         String referenceTableName = StringUtils.substring(foreignK.getName(), 4); // Hago esto porque foreignK tiene el formato "KEY_Entidad"
         String primaryKeyReference = String.join(",", reference);
 
@@ -259,6 +286,16 @@ public class MySqlSchemaGenerator {
             Statement stmt= GraphMigrator.con.createStatement();
             System.out.println("ALTER TABLE " + tableName + " ADD COLUMN " + attributeName + " " + attributeType + " " + attributeMandatory + ";");
             stmt.execute("ALTER TABLE " + tableName + " ADD COLUMN " + attributeName + " " + attributeType + " " + attributeMandatory + ";");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void alterTableAddUnique(String tableName, String attributeList){
+        try {
+            Statement stmt= GraphMigrator.con.createStatement();
+            System.out.println("ALTER TABLE " + tableName + " ADD CONSTRAINT const_unique_" + tableName + " UNIQUE (" + attributeList + ");");
+            stmt.execute("ALTER TABLE " + tableName + " ADD CONSTRAINT const_unique_" + tableName + " UNIQUE (" + attributeList + ");");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

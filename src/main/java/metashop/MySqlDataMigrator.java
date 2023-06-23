@@ -157,6 +157,7 @@ public class MySqlDataMigrator {
         ArrayList<String> whereConditions = getAttributeValue((ArrayList<String>) MySqlSchemaGenerator.entityPrimaryKeys.get(GraphMigrator.appendLabels(whereNode)), whereNode);
         String set = String.join(",", setAttributes);
         String where = String.join(" AND ", whereConditions);
+        System.out.println("UPDATE " + tableName + " SET " + set + " WHERE " + where + ";");
         return "UPDATE " + tableName + " SET " + set + " WHERE " + where + ";";
     }
 
@@ -252,8 +253,6 @@ public class MySqlDataMigrator {
                         }
                     }
                 }
-                System.out.println(getInsertSentence(tableName, originPrimaryKeys, destinationPrimaryKeyWithoutValues,
-                        relationshipAttributes, originPrimaryKeyValues, destinationPrimaryKeyValues, relationshipAttributesValues));
                 stmt.execute(getInsertSentence(tableName, originPrimaryKeys, destinationPrimaryKeyWithoutValues,
                         relationshipAttributes, originPrimaryKeyValues, destinationPrimaryKeyValues, relationshipAttributesValues));
             }
@@ -276,13 +275,22 @@ public class MySqlDataMigrator {
     private static String getInsertSentence(String tableName, ArrayList<String> originPrimaryKeysColumnsWithoutValue, ArrayList<String> destinationPrimaryKeysColumnsWithoutValue,
                                             ArrayList<String> relationshipAttributes, ArrayList<String> originPrimaryKeysColumns, ArrayList<String> destinationPrimaryKeysColumns,
                                             ArrayList<String> relationshipAttributesValues){
-        if (relationshipAttributes.isEmpty())
+        if (relationshipAttributes.isEmpty()){
+            System.out.println("INSERT INTO " + tableName + "(" + String.join(",", originPrimaryKeysColumnsWithoutValue) + "," +
+                    String.join(",", destinationPrimaryKeysColumnsWithoutValue) + ") VALUES (" + String.join(",",originPrimaryKeysColumns)
+                    + "," + String.join(",", destinationPrimaryKeysColumns) + ");");
             return "INSERT INTO " + tableName + "(" + String.join(",", originPrimaryKeysColumnsWithoutValue) + "," +
                     String.join(",", destinationPrimaryKeysColumnsWithoutValue) + ") VALUES (" + String.join(",",originPrimaryKeysColumns)
                     + "," + String.join(",", destinationPrimaryKeysColumns) + ");";
-        else return "INSERT INTO " + tableName + "(" + String.join(",", originPrimaryKeysColumnsWithoutValue) + "," +
-                String.join(",", destinationPrimaryKeysColumnsWithoutValue) + "," +  String.join(",", relationshipAttributes) + ") VALUES (" + String.join(",",originPrimaryKeysColumns)
-                + "," + String.join(",", destinationPrimaryKeysColumns) + "," +String.join(",", relationshipAttributesValues) + ");";
+        }
+        else {
+            System.out.println( "INSERT INTO " + tableName + "(" + String.join(",", originPrimaryKeysColumnsWithoutValue) + "," +
+                    String.join(",", destinationPrimaryKeysColumnsWithoutValue) + "," +  String.join(",", relationshipAttributes) + ") VALUES (" + String.join(",",originPrimaryKeysColumns)
+                    + "," + String.join(",", destinationPrimaryKeysColumns) + "," +String.join(",", relationshipAttributesValues) + ");");
+            return "INSERT INTO " + tableName + "(" + String.join(",", originPrimaryKeysColumnsWithoutValue) + "," +
+                    String.join(",", destinationPrimaryKeysColumnsWithoutValue) + "," +  String.join(",", relationshipAttributes) + ") VALUES (" + String.join(",",originPrimaryKeysColumns)
+                    + "," + String.join(",", destinationPrimaryKeysColumns) + "," +String.join(",", relationshipAttributesValues) + ");";
+        }
 
     }
 
